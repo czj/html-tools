@@ -5,11 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OCR</title>
     <link rel="stylesheet" href="common.css">
-    <script type="module">
-        import pdfjsDist from 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.2.67/+esm';
-        pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.2.67/build/pdf.worker.min.mjs";
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
         body {
             display: flex;
@@ -213,12 +208,6 @@
             outline: none;
         }
 
-        .status-text {
-            font-size: 0.875rem;
-            color: var(--accent-yellow);
-            font-weight: 500;
-        }
-
         @media (max-width: 768px) {
             .drop-zone {
                 padding: 32px 16px;
@@ -247,7 +236,37 @@
         <button id="clearBtn" class="secondary">Clear</button>
         <div class="option-group">
             <label for="language">Language:</label>
-            <select id="language"></select>
+            <select id="language">
+                <option value="eng">English</option>
+                <option value="fra">French</option>
+                <option value="deu">German</option>
+                <option value="spa">Spanish</option>
+                <option value="ita">Italian</option>
+                <option value="por">Portuguese</option>
+                <option value="nld">Dutch</option>
+                <option value="pol">Polish</option>
+                <option value="rus">Russian</option>
+                <option value="ukr">Ukrainian</option>
+                <option value="ara">Arabic</option>
+                <option value="heb">Hebrew</option>
+                <option value="hin">Hindi</option>
+                <option value="jpn">Japanese</option>
+                <option value="kor">Korean</option>
+                <option value="chi_sim">Chinese (Simplified)</option>
+                <option value="chi_tra">Chinese (Traditional)</option>
+                <option value="tha">Thai</option>
+                <option value="vie">Vietnamese</option>
+                <option value="tur">Turkish</option>
+                <option value="ces">Czech</option>
+                <option value="dan">Danish</option>
+                <option value="fin">Finnish</option>
+                <option value="ell">Greek</option>
+                <option value="hun">Hungarian</option>
+                <option value="ind">Indonesian</option>
+                <option value="nor">Norwegian</option>
+                <option value="ron">Romanian</option>
+                <option value="swe">Swedish</option>
+            </select>
         </div>
     </div>
 
@@ -260,8 +279,8 @@
                 <line x1="16" y1="17" x2="8" y2="17"></line>
             </svg>
             <p class="drop-zone-text" id="dropZoneText">Drop an image or PDF here, or click to select</p>
-            <p class="drop-zone-hint">Supports JPG, PNG, GIF, PDF. You can also paste from clipboard.</p>
-            <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png,.gif,image/*">
+            <p class="drop-zone-hint">Supports JPG, PNG, WebP, BMP, and PDF. You can also paste from clipboard.</p>
+            <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.bmp,image/*">
         </div>
 
         <div id="output">
@@ -283,33 +302,15 @@
         </div>
     </main>
 
-    <script>
-        const LANGUAGES = {
-            "afr": "Afrikaans", "amh": "Amharic", "ara": "Arabic", "asm": "Assamese",
-            "aze": "Azerbaijani", "bel": "Belarusian", "ben": "Bengali", "bod": "Tibetan",
-            "bos": "Bosnian", "bul": "Bulgarian", "cat": "Catalan", "ceb": "Cebuano",
-            "ces": "Czech", "chi_sim": "Chinese (Simplified)", "chi_tra": "Chinese (Traditional)",
-            "chr": "Cherokee", "cym": "Welsh", "dan": "Danish", "deu": "German",
-            "dzo": "Dzongkha", "ell": "Greek", "eng": "English", "epo": "Esperanto",
-            "est": "Estonian", "eus": "Basque", "fas": "Persian", "fin": "Finnish",
-            "fra": "French", "gle": "Irish", "glg": "Galician", "guj": "Gujarati",
-            "hat": "Haitian Creole", "heb": "Hebrew", "hin": "Hindi", "hrv": "Croatian",
-            "hun": "Hungarian", "ind": "Indonesian", "isl": "Icelandic", "ita": "Italian",
-            "jav": "Javanese", "jpn": "Japanese", "kan": "Kannada", "kat": "Georgian",
-            "kaz": "Kazakh", "khm": "Khmer", "kir": "Kyrgyz", "kor": "Korean",
-            "kur": "Kurdish", "lao": "Lao", "lat": "Latin", "lav": "Latvian",
-            "lit": "Lithuanian", "mal": "Malayalam", "mar": "Marathi", "mkd": "Macedonian",
-            "mlt": "Maltese", "msa": "Malay", "mya": "Burmese", "nep": "Nepali",
-            "nld": "Dutch", "nor": "Norwegian", "ori": "Oriya", "pan": "Punjabi",
-            "pol": "Polish", "por": "Portuguese", "pus": "Pashto", "ron": "Romanian",
-            "rus": "Russian", "san": "Sanskrit", "sin": "Sinhala", "slk": "Slovak",
-            "slv": "Slovenian", "spa": "Spanish", "sqi": "Albanian", "srp": "Serbian",
-            "swa": "Swahili", "swe": "Swedish", "syr": "Syriac", "tam": "Tamil",
-            "tel": "Telugu", "tgk": "Tajik", "tgl": "Tagalog", "tha": "Thai",
-            "tir": "Tigrinya", "tur": "Turkish", "uig": "Uyghur", "ukr": "Ukrainian",
-            "urd": "Urdu", "uzb": "Uzbek", "vie": "Vietnamese", "yid": "Yiddish"
-        };
+    <!-- Tesseract.js v5 - simple global script -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
+    <script>
+        // App state
+        let processing = false;
+        let pdfjs = null;
+
+        // DOM elements
         const dropZone = document.getElementById('dropZone');
         const dropZoneText = document.getElementById('dropZoneText');
         const fileInput = document.getElementById('fileInput');
@@ -321,20 +322,13 @@
         const clearBtn = document.getElementById('clearBtn');
         const copyFullBtn = document.getElementById('copyFullBtn');
 
-        let processing = false;
-
-        // Populate language select
-        for (const code of Object.values(Tesseract.languages)) {
-            const option = document.createElement('option');
-            option.value = code;
-            option.textContent = LANGUAGES[code] || code;
-            languageSelect.appendChild(option);
+        // Set language from URL parameter
+        const urlLang = new URLSearchParams(window.location.search).get('language');
+        if (urlLang && languageSelect.querySelector(`option[value="${urlLang}"]`)) {
+            languageSelect.value = urlLang;
         }
 
-        // Set language from URL or default
-        const urlLang = new URLSearchParams(window.location.search).get('language');
-        languageSelect.value = urlLang || 'eng';
-
+        // Sync language to URL
         languageSelect.addEventListener('change', () => {
             const url = new URL(window.location);
             if (languageSelect.value !== 'eng') {
@@ -342,9 +336,10 @@
             } else {
                 url.searchParams.delete('language');
             }
-            history.pushState({}, '', url);
+            history.replaceState({}, '', url);
         });
 
+        // Drop zone interactions
         dropZone.addEventListener('click', () => !processing && fileInput.click());
 
         dropZone.addEventListener('dragover', (e) => {
@@ -366,13 +361,32 @@
             if (e.target.files[0]) processFile(e.target.files[0]);
         });
 
+        // Clipboard paste support
         document.addEventListener('paste', (e) => {
+            if (processing) return;
             const items = Array.from(e.clipboardData.items);
             const imageItem = items.find(item => item.type.startsWith('image/'));
-            if (imageItem && !processing) {
+            if (imageItem) {
                 processFile(imageItem.getAsFile());
             }
         });
+
+        // Load PDF.js dynamically only when needed
+        async function loadPdfJs() {
+            if (pdfjs) return pdfjs;
+
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js';
+                script.onload = () => {
+                    pdfjs = window.pdfjsLib;
+                    pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+                    resolve(pdfjs);
+                };
+                script.onerror = () => reject(new Error('Failed to load PDF.js'));
+                document.head.appendChild(script);
+            });
+        }
 
         async function processFile(file) {
             processing = true;
@@ -382,36 +396,102 @@
             fullTextCard.style.display = 'none';
             output.classList.add('visible');
 
-            const worker = await Tesseract.createWorker(languageSelect.value);
+            const lang = languageSelect.value;
 
-            if (file.type === 'application/pdf') {
-                dropZoneText.textContent = 'Loading PDF...';
-                const { numPages, imageIterator } = await convertPDFToImages(file);
-                let done = 0;
+            try {
+                // Create Tesseract worker once, reuse for all pages
+                dropZoneText.textContent = `Loading ${languageSelect.options[languageSelect.selectedIndex].text} OCR...`;
+                const worker = await Tesseract.createWorker(lang);
 
-                for await (const { imageURL } of imageIterator) {
-                    done++;
-                    dropZoneText.textContent = `Processing page ${done} of ${numPages}...`;
-                    const pageEl = createPageElement(done, imageURL);
-                    pages.appendChild(pageEl);
-                    const { text } = await ocrImage(worker, imageURL);
-                    pageEl.querySelector('textarea').value = text.trim();
-                    updateFullText();
+                const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+
+                if (isPDF) {
+                    await processPDF(file, worker);
+                } else {
+                    await processImage(file, worker);
                 }
-            } else {
-                dropZoneText.textContent = 'Processing image...';
-                const imageURL = URL.createObjectURL(file);
-                const pageEl = createPageElement(1, imageURL);
-                pages.appendChild(pageEl);
-                const { text } = await ocrImage(worker, imageURL);
-                pageEl.querySelector('textarea').value = text.trim();
-                updateFullText();
+
+                await worker.terminate();
+            } catch (error) {
+                console.error('OCR error:', error);
+                dropZoneText.textContent = `Error: ${error.message}`;
             }
 
-            await worker.terminate();
             dropZoneText.textContent = 'Drop an image or PDF here, or click to select';
             dropZone.classList.remove('processing');
             processing = false;
+        }
+
+        async function processImage(file, worker) {
+            dropZoneText.textContent = 'Processing image...';
+
+            // Create preview URL
+            const imageURL = URL.createObjectURL(file);
+
+            // Create page element
+            const pageEl = createPageElement(1, imageURL);
+            pages.appendChild(pageEl);
+
+            // Pass the File object directly to Tesseract - this is the most reliable method
+            const { data: { text } } = await worker.recognize(file);
+
+            pageEl.querySelector('textarea').value = text.trim();
+            updateFullText();
+        }
+
+        async function processPDF(file, worker) {
+            dropZoneText.textContent = 'Loading PDF library...';
+
+            // Load PDF.js
+            const pdfjsLib = await loadPdfJs();
+
+            dropZoneText.textContent = 'Reading PDF...';
+
+            // Load PDF document
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            const numPages = pdf.numPages;
+
+            for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+                dropZoneText.textContent = `Processing page ${pageNum} of ${numPages}...`;
+
+                // Get PDF page
+                const page = await pdf.getPage(pageNum);
+
+                // Render to canvas at 2x scale for better OCR results
+                const scale = 2.0;
+                const viewport = page.getViewport({ scale });
+
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+
+                await page.render({
+                    canvasContext: context,
+                    viewport: viewport
+                }).promise;
+
+                // Convert canvas to blob using requestAnimationFrame for safety
+                const blob = await new Promise((resolve) => {
+                    requestAnimationFrame(() => {
+                        canvas.toBlob(resolve, 'image/png');
+                    });
+                });
+
+                // Create preview URL from blob
+                const imageURL = URL.createObjectURL(blob);
+
+                // Create page element
+                const pageEl = createPageElement(pageNum, imageURL);
+                pages.appendChild(pageEl);
+
+                // OCR the blob - Tesseract handles Blob objects well
+                const { data: { text } } = await worker.recognize(blob);
+
+                pageEl.querySelector('textarea').value = text.trim();
+                updateFullText();
+            }
         }
 
         function createPageElement(pageNum, imageURL) {
@@ -450,35 +530,6 @@
             } else {
                 fullTextCard.style.display = 'none';
             }
-        }
-
-        async function convertPDFToImages(file) {
-            const pdf = await pdfjsLib.getDocument(URL.createObjectURL(file)).promise;
-            const numPages = pdf.numPages;
-
-            async function* images() {
-                for (let i = 1; i <= numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const viewport = page.getViewport({ scale: 1 });
-                    const canvas = document.createElement('canvas');
-                    const context = canvas.getContext('2d');
-                    const desiredWidth = 1000;
-                    canvas.width = desiredWidth;
-                    canvas.height = (desiredWidth / viewport.width) * viewport.height;
-                    await page.render({
-                        canvasContext: context,
-                        viewport: page.getViewport({ scale: desiredWidth / viewport.width })
-                    }).promise;
-                    yield { imageURL: canvas.toDataURL('image/jpeg', 0.8) };
-                }
-            }
-
-            return { numPages, imageIterator: images() };
-        }
-
-        async function ocrImage(worker, imageUrl) {
-            const { data: { text } } = await worker.recognize(imageUrl);
-            return { text };
         }
 
         window.copyPageText = function(btn) {
