@@ -88,10 +88,11 @@ When adding or updating a tool:
 
 ## External Dependencies (if absolutely needed)
 
-Use Bunny CDN's open-source CDN:
+Use jsDelivr (Bunny CDN backed):
 ```html
 <script src="https://cdn.jsdelivr.net/npm/[package]@[version]/[file]"></script>
 ```
 
 Current dependencies:
-- `js-yaml` - For YAML parsing (complex grammar, justified dependency)
+- `js-yaml@4.1.0` - YAML parsing (complex grammar)
+- `marked@15.0.4` - Markdown parsing (battle-tested since 2011)
