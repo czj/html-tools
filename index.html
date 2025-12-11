@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Tools</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #f5f0e8;
+            --text-primary: #1a1a2e;
+            --text-secondary: #4a4a68;
+            --accent-coral: #ff6b6b;
+            --accent-yellow: #ffd93d;
+            --accent-mint: #6bcb77;
+            --accent-blue: #4d96ff;
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --card-border: rgba(255, 255, 255, 0.9);
+            --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.08);
+            --shadow-elevated: 0 16px 48px rgba(0, 0, 0, 0.12);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-base);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 48px 24px;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Neo Memphis decorative shapes */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -100px;
+            right: -100px;
+            width: 400px;
+            height: 400px;
+            background: var(--accent-yellow);
+            border-radius: 50%;
+            opacity: 0.4;
+            z-index: -1;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -150px;
+            left: -150px;
+            width: 500px;
+            height: 500px;
+            background: var(--accent-coral);
+            border-radius: 50%;
+            opacity: 0.3;
+            z-index: -1;
+        }
+
+        .shape-dots {
+            position: fixed;
+            top: 20%;
+            left: 5%;
+            width: 120px;
+            height: 120px;
+            background-image: radial-gradient(var(--accent-blue) 2px, transparent 2px);
+            background-size: 12px 12px;
+            opacity: 0.5;
+            z-index: -1;
+        }
+
+        .shape-ring {
+            position: fixed;
+            bottom: 15%;
+            right: 8%;
+            width: 150px;
+            height: 150px;
+            border: 8px solid var(--accent-mint);
+            border-radius: 50%;
+            opacity: 0.4;
+            z-index: -1;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 56px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            margin-top: 12px;
+            font-weight: 400;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 28px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .tool-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            box-shadow: var(--shadow-soft);
+            overflow: hidden;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-6px) scale(1.01);
+            box-shadow: var(--shadow-elevated);
+        }
+
+        .tool-icon {
+            background: linear-gradient(145deg, #ffffff 0%, #f0f0f0 100%);
+            padding: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tool-icon::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            background: linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 100%);
+            pointer-events: none;
+        }
+
+        .tool-icon svg {
+            width: 52px;
+            height: 52px;
+            color: var(--accent-coral);
+            filter: drop-shadow(0 2px 4px rgba(255, 107, 107, 0.3));
+        }
+
+        .tool-content {
+            padding: 28px;
+        }
+
+        .tool-title {
+            margin: 0 0 10px 0;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .tool-description {
+            margin: 0;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .tool-tag {
+            display: inline-block;
+            margin-top: 18px;
+            padding: 6px 14px;
+            background: linear-gradient(135deg, var(--accent-yellow) 0%, #ffec8b 100%);
+            color: var(--text-primary);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(255, 217, 61, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 32px 16px;
+            }
+
+            h1 {
+                font-size: 2.2rem;
+            }
+
+            .tools-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .shape-dots, .shape-ring {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="shape-dots"></div>
+    <div class="shape-ring"></div>
+
+    <header>
+        <h1>HTML Tools</h1>
+        <p class="subtitle">A collection of browser-based utilities</p>
+    </header>
+
+    <div class="tools-grid">
+        <a href="json-to-yaml.html" class="tool-card">
+            <div class="tool-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+            </div>
+            <div class="tool-content">
+                <h2 class="tool-title">JSON to YAML Converter</h2>
+                <p class="tool-description">Convert JSON data to YAML format in real-time as you type. Features instant validation and one-click copy.</p>
+                <span class="tool-tag">Converter</span>
+            </div>
+        </a>
+    </div>
+</body>
+</html>
