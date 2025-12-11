@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diff Checker</title>
+    <link rel="stylesheet" href="common.css">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 24px;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+            width: 100%;
+        }
+
+        .input-pane {
+            flex: 1;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            box-shadow: var(--shadow-soft);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 200px;
+        }
+
+        .diff-output {
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            box-shadow: var(--shadow-soft);
+            overflow: hidden;
+        }
+
+        .diff-content {
+            padding: 0;
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            overflow-x: auto;
+            min-height: 300px;
+        }
+
+        .diff-line {
+            display: flex;
+            padding: 2px 16px;
+            white-space: pre;
+        }
+
+        .diff-line-num {
+            width: 50px;
+            flex-shrink: 0;
+            color: var(--text-secondary);
+            text-align: right;
+            padding-right: 12px;
+            user-select: none;
+            opacity: 0.6;
+        }
+
+        .diff-line-content {
+            flex: 1;
+            padding-left: 8px;
+        }
+
+        .diff-line.added {
+            background: rgba(107, 203, 119, 0.2);
+        }
+
+        .diff-line.added .diff-line-content::before {
+            content: '+ ';
+            color: var(--success-color);
+            font-weight: bold;
+        }
+
+        .diff-line.removed {
+            background: rgba(255, 107, 107, 0.2);
+        }
+
+        .diff-line.removed .diff-line-content::before {
+            content: '- ';
+            color: var(--error-color);
+            font-weight: bold;
+        }
+
+        .diff-line.unchanged {
+            background: transparent;
+        }
+
+        .diff-line.unchanged .diff-line-content::before {
+            content: '  ';
+        }
+
+        .diff-stats {
+            display: flex;
+            gap: 20px;
+            padding: 12px 20px;
+            background: rgba(255,255,255,0.5);
+            border-top: 1px solid rgba(0,0,0,0.06);
+            font-size: 0.9rem;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stat-added { color: var(--success-color); }
+        .stat-removed { color: var(--error-color); }
+        .stat-unchanged { color: var(--text-secondary); }
+
+        .empty-diff {
+            padding: 40px;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        @media (max-width: 768px) {
+            .input-container {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="shape-dots"></div>
+    <div class="shape-ring"></div>
+
+    <a href="index.html" class="back-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        All Tools
+    </a>
+
+    <header>
+        <h1>Diff Checker</h1>
+        <p class="subtitle">Compare two text blocks and see the differences</p>
+    </header>
+
+    <div class="controls">
+        <button id="compareBtn">Compare</button>
+        <button id="clearBtn" class="secondary">Clear</button>
+        <button id="swapBtn">Swap</button>
+    </div>
+
+    <div class="input-container">
+        <div class="input-pane">
+            <div class="pane-header">
+                <span class="label">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                    </svg>
+                    Original Text
+                </span>
+            </div>
+            <textarea id="originalText" placeholder="Paste original text here..." spellcheck="false"></textarea>
+        </div>
+
+        <div class="input-pane">
+            <div class="pane-header">
+                <span class="label">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                    </svg>
+                    Modified Text
+                </span>
+            </div>
+            <textarea id="modifiedText" placeholder="Paste modified text here..." spellcheck="false"></textarea>
+        </div>
+    </div>
+
+    <div class="diff-output">
+        <div class="pane-header">
+            <span class="label">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="20" x2="18" y2="10"></line>
+                    <line x1="12" y1="20" x2="12" y2="4"></line>
+                    <line x1="6" y1="20" x2="6" y2="14"></line>
+                </svg>
+                Diff Output
+            </span>
+        </div>
+        <div id="diffContent" class="diff-content">
+            <div class="empty-diff">Enter text in both fields and click Compare</div>
+        </div>
+        <div id="diffStats" class="diff-stats" style="display: none;">
+            <div class="stat-item stat-added">
+                <strong id="addedCount">0</strong> additions
+            </div>
+            <div class="stat-item stat-removed">
+                <strong id="removedCount">0</strong> deletions
+            </div>
+            <div class="stat-item stat-unchanged">
+                <strong id="unchangedCount">0</strong> unchanged
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const originalText = document.getElementById('originalText');
+        const modifiedText = document.getElementById('modifiedText');
+        const diffContent = document.getElementById('diffContent');
+        const diffStats = document.getElementById('diffStats');
+        const addedCount = document.getElementById('addedCount');
+        const removedCount = document.getElementById('removedCount');
+        const unchangedCount = document.getElementById('unchangedCount');
+        const compareBtn = document.getElementById('compareBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const swapBtn = document.getElementById('swapBtn');
+
+        // Simple LCS-based diff algorithm
+        function computeDiff(original, modified) {
+            const origLines = original.split('\n');
+            const modLines = modified.split('\n');
+
+            // Build LCS table
+            const m = origLines.length;
+            const n = modLines.length;
+            const dp = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+
+            for (let i = 1; i <= m; i++) {
+                for (let j = 1; j <= n; j++) {
+                    if (origLines[i - 1] === modLines[j - 1]) {
+                        dp[i][j] = dp[i - 1][j - 1] + 1;
+                    } else {
+                        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+                    }
+                }
+            }
+
+            // Backtrack to find diff
+            const diff = [];
+            let i = m, j = n;
+
+            while (i > 0 || j > 0) {
+                if (i > 0 && j > 0 && origLines[i - 1] === modLines[j - 1]) {
+                    diff.unshift({ type: 'unchanged', line: origLines[i - 1], origNum: i, modNum: j });
+                    i--;
+                    j--;
+                } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+                    diff.unshift({ type: 'added', line: modLines[j - 1], modNum: j });
+                    j--;
+                } else {
+                    diff.unshift({ type: 'removed', line: origLines[i - 1], origNum: i });
+                    i--;
+                }
+            }
+
+            return diff;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function renderDiff() {
+            const orig = originalText.value;
+            const mod = modifiedText.value;
+
+            if (!orig && !mod) {
+                diffContent.innerHTML = '<div class="empty-diff">Enter text in both fields and click Compare</div>';
+                diffStats.style.display = 'none';
+                return;
+            }
+
+            const diff = computeDiff(orig, mod);
+
+            let added = 0, removed = 0, unchanged = 0;
+            let html = '';
+
+            diff.forEach(item => {
+                const lineNum = item.type === 'removed' ? item.origNum : (item.modNum || '');
+                html += `<div class="diff-line ${item.type}">
+                    <span class="diff-line-num">${lineNum}</span>
+                    <span class="diff-line-content">${escapeHtml(item.line)}</span>
+                </div>`;
+
+                if (item.type === 'added') added++;
+                else if (item.type === 'removed') removed++;
+                else unchanged++;
+            });
+
+            diffContent.innerHTML = html || '<div class="empty-diff">No differences found</div>';
+
+            addedCount.textContent = added;
+            removedCount.textContent = removed;
+            unchangedCount.textContent = unchanged;
+            diffStats.style.display = 'flex';
+        }
+
+        compareBtn.addEventListener('click', renderDiff);
+
+        // Auto-compare on input
+        let debounceTimer;
+        function debouncedCompare() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(renderDiff, 300);
+        }
+
+        originalText.addEventListener('input', debouncedCompare);
+        modifiedText.addEventListener('input', debouncedCompare);
+
+        clearBtn.addEventListener('click', () => {
+            originalText.value = '';
+            modifiedText.value = '';
+            diffContent.innerHTML = '<div class="empty-diff">Enter text in both fields and click Compare</div>';
+            diffStats.style.display = 'none';
+            originalText.focus();
+        });
+
+        swapBtn.addEventListener('click', () => {
+            const temp = originalText.value;
+            originalText.value = modifiedText.value;
+            modifiedText.value = temp;
+            renderDiff();
+        });
+    </script>
+</body>
+</html>
