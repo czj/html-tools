@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Converter</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .color-input-section {
+            max-width: 600px;
+            margin: 0 auto 30px;
+            width: 100%;
+        }
+
+        .color-input-wrapper {
+            display: flex;
+            gap: 16px;
+            align-items: stretch;
+        }
+
+        .color-preview {
+            width: 80px;
+            min-height: 60px;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            box-shadow: var(--shadow-soft), inset 0 0 0 1px rgba(0,0,0,0.1);
+            background: repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 50% / 16px 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .color-preview-inner {
+            position: absolute;
+            inset: 0;
+            transition: background-color 0.15s;
+        }
+
+        .color-input {
+            flex: 1;
+            padding: 18px 20px;
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: var(--shadow-soft);
+            outline: none;
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+
+        .color-input:focus {
+            box-shadow: var(--shadow-elevated);
+            transform: translateY(-2px);
+        }
+
+        .color-input::placeholder {
+            color: var(--text-secondary);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .formats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .format-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            box-shadow: var(--shadow-soft);
+            padding: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .format-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-elevated);
+        }
+
+        .format-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .format-name {
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+        }
+
+        .format-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            background: rgba(255,255,255,0.5);
+            padding: 12px 14px;
+            border-radius: 8px;
+            word-break: break-all;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+        }
+
+        .format-value.empty {
+            color: var(--text-secondary);
+            font-family: 'Inter', sans-serif;
+            font-style: italic;
+        }
+
+        .copy-btn {
+            padding: 6px 12px;
+            font-size: 11px;
+        }
+
+        .error-banner {
+            background: linear-gradient(135deg, var(--error-color) 0%, #e85555 100%);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            font-weight: 500;
+            display: none;
+        }
+
+        .supported-formats {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-top: 30px;
+            line-height: 1.8;
+        }
+
+        .supported-formats code {
+            background: rgba(255,255,255,0.6);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 768px) {
+            .color-input-wrapper {
+                flex-direction: column;
+            }
+
+            .color-preview {
+                width: 100%;
+                height: 60px;
+            }
+
+            .formats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="shape-dots"></div>
+    <div class="shape-ring"></div>
+
+    <a href="index.html" class="back-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        All Tools
+    </a>
+
+    <header>
+        <h1>Color Converter</h1>
+        <p class="subtitle">Convert between all modern CSS color formats</p>
+    </header>
+
+    <div class="color-input-section">
+        <div id="errorBanner" class="error-banner"></div>
+        <div class="color-input-wrapper">
+            <div class="color-preview">
+                <div id="colorPreview" class="color-preview-inner"></div>
+            </div>
+            <input type="text" id="colorInput" class="color-input" placeholder="Enter any color: #ff6b6b, rgb(255,107,107), hsl(0 71% 71%), oklch(0.7 0.15 25)..." autofocus>
+        </div>
+    </div>
+
+    <div class="formats-grid" id="formatsGrid">
+        <div class="format-card" data-format="hex">
+            <div class="format-header">
+                <span class="format-name">HEX</span>
+                <button class="copy-btn">Copy</button>
+            </div>
+            <div class="format-value empty">—</div>
+        </div>
+        <div class="format-card" data-format="rgb">
+            <div class="format-header">
+                <span class="format-name">RGB</span>
+                <button class="copy-btn">Copy</button>
+            </div>
+            <div class="format-value empty">—</div>
+        </div>
+        <div class="format-card" data-format="hsl">
+            <div class="format-header">
+                <span class="format-name">HSL</span>
+                <button class="copy-btn">Copy</button>
+            </div>
+            <div class="format-value empty">—</div>
+        </div>
+        <div class="format-card" data-format="hwb">
+            <div class="format-header">
+                <span class="format-name">HWB</span>
+                <button class="copy-btn">Copy</button>
+            </div>
+            <div class="format-value empty">—</div>
+        </div>
+        <div class="format-card" data-format="lab">
+            <div class="format-header">
+                <span class="format-name">LAB</span>
+                <button class="copy-btn">Copy</button>
+            </div>
+            <div class="format-value empty">—</div>
+        </div>
+        <div class="format-card" data-format="lch">
+            <div class="format-header">
+                <span class="format-name">LCH</span>
+                <button class="copy-btn">Copy</button>
+            </div>
+            <div class="format-value empty">—</div>
+        </div>
+        <div class="format-card" data-format="oklab">
+            <div class="format-header">
+                <span class="format-name">OKLAB</span>
+                <button class="copy-btn">Copy</button>
+            </div>
+            <div class="format-value empty">—</div>
+        </div>
+        <div class="format-card" data-format="oklch">
+            <div class="format-header">
+                <span class="format-name">OKLCH</span>
+                <button class="copy-btn">Copy</button>
+            </div>
+            <div class="format-value empty">—</div>
+        </div>
+    </div>
+
+    <p class="supported-formats">
+        Supported inputs: <code>#rgb</code> <code>#rrggbb</code> <code>#rrggbbaa</code>
+        <code>rgb()</code> <code>rgba()</code> <code>hsl()</code> <code>hsla()</code>
+        <code>hwb()</code> <code>lab()</code> <code>lch()</code> <code>oklab()</code> <code>oklch()</code>
+        <br>Also supports CSS named colors like <code>coral</code>, <code>steelblue</code>, etc.
+    </p>
+
+    <script>
+        // === Color conversion utilities ===
+
+        // Clamp value between min and max
+        const clamp = (val, min, max) => Math.min(max, Math.max(min, val));
+
+        // Round to n decimal places
+        const round = (val, n = 2) => Math.round(val * 10**n) / 10**n;
+
+        // === RGB conversions ===
+
+        function hexToRgb(hex) {
+            hex = hex.replace('#', '');
+            if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+            if (hex.length === 4) hex = hex.split('').map(c => c + c).join('');
+            const r = parseInt(hex.slice(0, 2), 16);
+            const g = parseInt(hex.slice(2, 4), 16);
+            const b = parseInt(hex.slice(4, 6), 16);
+            const a = hex.length === 8 ? parseInt(hex.slice(6, 8), 16) / 255 : 1;
+            return { r, g, b, a };
+        }
+
+        function rgbToHex({ r, g, b, a = 1 }) {
+            const toHex = n => Math.round(clamp(n, 0, 255)).toString(16).padStart(2, '0');
+            const hex = `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+            return a < 1 ? hex + toHex(a * 255) : hex;
+        }
+
+        // === HSL conversions ===
+
+        function rgbToHsl({ r, g, b, a = 1 }) {
+            r /= 255; g /= 255; b /= 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+
+            if (max === min) {
+                h = s = 0;
+            } else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+                    case g: h = ((b - r) / d + 2) / 6; break;
+                    case b: h = ((r - g) / d + 4) / 6; break;
+                }
+            }
+            return { h: h * 360, s: s * 100, l: l * 100, a };
+        }
+
+        function hslToRgb({ h, s, l, a = 1 }) {
+            h /= 360; s /= 100; l /= 100;
+            let r, g, b;
+
+            if (s === 0) {
+                r = g = b = l;
+            } else {
+                const hue2rgb = (p, q, t) => {
+                    if (t < 0) t += 1;
+                    if (t > 1) t -= 1;
+                    if (t < 1/6) return p + (q - p) * 6 * t;
+                    if (t < 1/2) return q;
+                    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                    return p;
+                };
+                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                const p = 2 * l - q;
+                r = hue2rgb(p, q, h + 1/3);
+                g = hue2rgb(p, q, h);
+                b = hue2rgb(p, q, h - 1/3);
+            }
+            return { r: r * 255, g: g * 255, b: b * 255, a };
+        }
+
+        // === HWB conversions ===
+
+        function rgbToHwb({ r, g, b, a = 1 }) {
+            const { h } = rgbToHsl({ r, g, b });
+            r /= 255; g /= 255; b /= 255;
+            const w = Math.min(r, g, b) * 100;
+            const bl = (1 - Math.max(r, g, b)) * 100;
+            return { h, w, b: bl, a };
+        }
+
+        function hwbToRgb({ h, w, b: bl, a = 1 }) {
+            w /= 100; bl /= 100;
+            if (w + bl >= 1) {
+                const gray = w / (w + bl);
+                return { r: gray * 255, g: gray * 255, b: gray * 255, a };
+            }
+            const rgb = hslToRgb({ h, s: 100, l: 50, a });
+            for (const c of ['r', 'g', 'b']) {
+                rgb[c] = (rgb[c] / 255) * (1 - w - bl) + w;
+                rgb[c] *= 255;
+            }
+            return rgb;
+        }
+
+        // === XYZ conversions (needed for LAB/LCH) ===
+
+        function rgbToXyz({ r, g, b, a = 1 }) {
+            // sRGB to linear RGB
+            const toLinear = v => {
+                v /= 255;
+                return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+            };
+            const lr = toLinear(r), lg = toLinear(g), lb = toLinear(b);
+
+            // Linear RGB to XYZ (D65)
+            return {
+                x: lr * 0.4124564 + lg * 0.3575761 + lb * 0.1804375,
+                y: lr * 0.2126729 + lg * 0.7151522 + lb * 0.0721750,
+                z: lr * 0.0193339 + lg * 0.1191920 + lb * 0.9503041,
+                a
+            };
+        }
+
+        function xyzToRgb({ x, y, z, a = 1 }) {
+            // XYZ to linear RGB
+            const lr = x *  3.2404542 + y * -1.5371385 + z * -0.4985314;
+            const lg = x * -0.9692660 + y *  1.8760108 + z *  0.0415560;
+            const lb = x *  0.0556434 + y * -0.2040259 + z *  1.0572252;
+
+            // Linear RGB to sRGB
+            const toSrgb = v => v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1/2.4) - 0.055;
+
+            return {
+                r: clamp(toSrgb(lr) * 255, 0, 255),
+                g: clamp(toSrgb(lg) * 255, 0, 255),
+                b: clamp(toSrgb(lb) * 255, 0, 255),
+                a
+            };
+        }
+
+        // === LAB conversions ===
+
+        const D65 = { x: 0.95047, y: 1.0, z: 1.08883 };
+
+        function xyzToLab({ x, y, z, a = 1 }) {
+            const f = v => v > 0.008856 ? Math.cbrt(v) : (7.787 * v) + 16/116;
+            const fx = f(x / D65.x);
+            const fy = f(y / D65.y);
+            const fz = f(z / D65.z);
+
+            return {
+                l: (116 * fy) - 16,
+                a: 500 * (fx - fy),
+                b: 200 * (fy - fz),
+                alpha: a
+            };
+        }
+
+        function labToXyz({ l, a: la, b: lb, alpha = 1 }) {
+            const fy = (l + 16) / 116;
+            const fx = la / 500 + fy;
+            const fz = fy - lb / 200;
+
+            const f_inv = v => {
+                const v3 = v * v * v;
+                return v3 > 0.008856 ? v3 : (v - 16/116) / 7.787;
+            };
+
+            return {
+                x: f_inv(fx) * D65.x,
+                y: f_inv(fy) * D65.y,
+                z: f_inv(fz) * D65.z,
+                a: alpha
+            };
+        }
+
+        function rgbToLab(rgb) {
+            return xyzToLab(rgbToXyz(rgb));
+        }
+
+        function labToRgb(lab) {
+            return xyzToRgb(labToXyz(lab));
+        }
+
+        // === LCH conversions ===
+
+        function labToLch({ l, a, b, alpha = 1 }) {
+            const c = Math.sqrt(a * a + b * b);
+            let h = Math.atan2(b, a) * 180 / Math.PI;
+            if (h < 0) h += 360;
+            return { l, c, h, alpha };
+        }
+
+        function lchToLab({ l, c, h, alpha = 1 }) {
+            const hRad = h * Math.PI / 180;
+            return {
+                l,
+                a: c * Math.cos(hRad),
+                b: c * Math.sin(hRad),
+                alpha
+            };
+        }
+
+        function rgbToLch(rgb) {
+            return labToLch(rgbToLab(rgb));
+        }
+
+        function lchToRgb(lch) {
+            return labToRgb(lchToLab(lch));
+        }
+
+        // === OKLAB conversions ===
+
+        function rgbToOklab({ r, g, b, a = 1 }) {
+            // sRGB to linear
+            const toLinear = v => {
+                v /= 255;
+                return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+            };
+            const lr = toLinear(r), lg = toLinear(g), lb = toLinear(b);
+
+            const l_ = Math.cbrt(0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb);
+            const m_ = Math.cbrt(0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb);
+            const s_ = Math.cbrt(0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb);
+
+            return {
+                l: 0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_,
+                a: 1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_,
+                b: 0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_,
+                alpha: a
+            };
+        }
+
+        function oklabToRgb({ l, a: la, b: lb, alpha = 1 }) {
+            const l_ = l + 0.3963377774 * la + 0.2158037573 * lb;
+            const m_ = l - 0.1055613458 * la - 0.0638541728 * lb;
+            const s_ = l - 0.0894841775 * la - 1.2914855480 * lb;
+
+            const l3 = l_ * l_ * l_;
+            const m3 = m_ * m_ * m_;
+            const s3 = s_ * s_ * s_;
+
+            const lr = +4.0767416621 * l3 - 3.3077115913 * m3 + 0.2309699292 * s3;
+            const lg = -1.2684380046 * l3 + 2.6097574011 * m3 - 0.3413193965 * s3;
+            const lb2 = -0.0041960863 * l3 - 0.7034186147 * m3 + 1.7076147010 * s3;
+
+            const toSrgb = v => v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1/2.4) - 0.055;
+
+            return {
+                r: clamp(toSrgb(lr) * 255, 0, 255),
+                g: clamp(toSrgb(lg) * 255, 0, 255),
+                b: clamp(toSrgb(lb2) * 255, 0, 255),
+                a: alpha
+            };
+        }
+
+        // === OKLCH conversions ===
+
+        function oklabToOklch({ l, a, b, alpha = 1 }) {
+            const c = Math.sqrt(a * a + b * b);
+            let h = Math.atan2(b, a) * 180 / Math.PI;
+            if (h < 0) h += 360;
+            return { l, c, h, alpha };
+        }
+
+        function oklchToOklab({ l, c, h, alpha = 1 }) {
+            const hRad = h * Math.PI / 180;
+            return {
+                l,
+                a: c * Math.cos(hRad),
+                b: c * Math.sin(hRad),
+                alpha
+            };
+        }
+
+        function rgbToOklch(rgb) {
+            return oklabToOklch(rgbToOklab(rgb));
+        }
+
+        function oklchToRgb(oklch) {
+            return oklabToRgb(oklchToOklab(oklch));
+        }
+
+        // === CSS named colors ===
+        const namedColors = {
+            aliceblue: '#f0f8ff', antiquewhite: '#faebd7', aqua: '#00ffff', aquamarine: '#7fffd4',
+            azure: '#f0ffff', beige: '#f5f5dc', bisque: '#ffe4c4', black: '#000000',
+            blanchedalmond: '#ffebcd', blue: '#0000ff', blueviolet: '#8a2be2', brown: '#a52a2a',
+            burlywood: '#deb887', cadetblue: '#5f9ea0', chartreuse: '#7fff00', chocolate: '#d2691e',
+            coral: '#ff7f50', cornflowerblue: '#6495ed', cornsilk: '#fff8dc', crimson: '#dc143c',
+            cyan: '#00ffff', darkblue: '#00008b', darkcyan: '#008b8b', darkgoldenrod: '#b8860b',
+            darkgray: '#a9a9a9', darkgreen: '#006400', darkgrey: '#a9a9a9', darkkhaki: '#bdb76b',
+            darkmagenta: '#8b008b', darkolivegreen: '#556b2f', darkorange: '#ff8c00', darkorchid: '#9932cc',
+            darkred: '#8b0000', darksalmon: '#e9967a', darkseagreen: '#8fbc8f', darkslateblue: '#483d8b',
+            darkslategray: '#2f4f4f', darkslategrey: '#2f4f4f', darkturquoise: '#00ced1', darkviolet: '#9400d3',
+            deeppink: '#ff1493', deepskyblue: '#00bfff', dimgray: '#696969', dimgrey: '#696969',
+            dodgerblue: '#1e90ff', firebrick: '#b22222', floralwhite: '#fffaf0', forestgreen: '#228b22',
+            fuchsia: '#ff00ff', gainsboro: '#dcdcdc', ghostwhite: '#f8f8ff', gold: '#ffd700',
+            goldenrod: '#daa520', gray: '#808080', green: '#008000', greenyellow: '#adff2f',
+            grey: '#808080', honeydew: '#f0fff0', hotpink: '#ff69b4', indianred: '#cd5c5c',
+            indigo: '#4b0082', ivory: '#fffff0', khaki: '#f0e68c', lavender: '#e6e6fa',
+            lavenderblush: '#fff0f5', lawngreen: '#7cfc00', lemonchiffon: '#fffacd', lightblue: '#add8e6',
+            lightcoral: '#f08080', lightcyan: '#e0ffff', lightgoldenrodyellow: '#fafad2', lightgray: '#d3d3d3',
+            lightgreen: '#90ee90', lightgrey: '#d3d3d3', lightpink: '#ffb6c1', lightsalmon: '#ffa07a',
+            lightseagreen: '#20b2aa', lightskyblue: '#87cefa', lightslategray: '#778899', lightslategrey: '#778899',
+            lightsteelblue: '#b0c4de', lightyellow: '#ffffe0', lime: '#00ff00', limegreen: '#32cd32',
+            linen: '#faf0e6', magenta: '#ff00ff', maroon: '#800000', mediumaquamarine: '#66cdaa',
+            mediumblue: '#0000cd', mediumorchid: '#ba55d3', mediumpurple: '#9370db', mediumseagreen: '#3cb371',
+            mediumslateblue: '#7b68ee', mediumspringgreen: '#00fa9a', mediumturquoise: '#48d1cc', mediumvioletred: '#c71585',
+            midnightblue: '#191970', mintcream: '#f5fffa', mistyrose: '#ffe4e1', moccasin: '#ffe4b5',
+            navajowhite: '#ffdead', navy: '#000080', oldlace: '#fdf5e6', olive: '#808000',
+            olivedrab: '#6b8e23', orange: '#ffa500', orangered: '#ff4500', orchid: '#da70d6',
+            palegoldenrod: '#eee8aa', palegreen: '#98fb98', paleturquoise: '#afeeee', palevioletred: '#db7093',
+            papayawhip: '#ffefd5', peachpuff: '#ffdab9', peru: '#cd853f', pink: '#ffc0cb',
+            plum: '#dda0dd', powderblue: '#b0e0e6', purple: '#800080', rebeccapurple: '#663399',
+            red: '#ff0000', rosybrown: '#bc8f8f', royalblue: '#4169e1', saddlebrown: '#8b4513',
+            salmon: '#fa8072', sandybrown: '#f4a460', seagreen: '#2e8b57', seashell: '#fff5ee',
+            sienna: '#a0522d', silver: '#c0c0c0', skyblue: '#87ceeb', slateblue: '#6a5acd',
+            slategray: '#708090', slategrey: '#708090', snow: '#fffafa', springgreen: '#00ff7f',
+            steelblue: '#4682b4', tan: '#d2b48c', teal: '#008080', thistle: '#d8bfd8',
+            tomato: '#ff6347', turquoise: '#40e0d0', violet: '#ee82ee', wheat: '#f5deb3',
+            white: '#ffffff', whitesmoke: '#f5f5f5', yellow: '#ffff00', yellowgreen: '#9acd32'
+        };
+
+        // === Parse any color format ===
+
+        function parseColor(input) {
+            input = input.trim().toLowerCase();
+
+            // Named color
+            if (namedColors[input]) {
+                return hexToRgb(namedColors[input]);
+            }
+
+            // HEX
+            if (/^#([0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(input)) {
+                return hexToRgb(input);
+            }
+
+            // RGB/RGBA - supports both old (commas) and new (spaces) syntax
+            const rgbMatch = input.match(/^rgba?\s*\(\s*([\d.]+%?)\s*[,\s]\s*([\d.]+%?)\s*[,\s]\s*([\d.]+%?)(?:\s*[,\/]\s*([\d.]+%?))?\s*\)$/);
+            if (rgbMatch) {
+                const parseVal = (v, max) => v.endsWith('%') ? parseFloat(v) / 100 * max : parseFloat(v);
+                return {
+                    r: clamp(parseVal(rgbMatch[1], 255), 0, 255),
+                    g: clamp(parseVal(rgbMatch[2], 255), 0, 255),
+                    b: clamp(parseVal(rgbMatch[3], 255), 0, 255),
+                    a: rgbMatch[4] ? (rgbMatch[4].endsWith('%') ? parseFloat(rgbMatch[4]) / 100 : parseFloat(rgbMatch[4])) : 1
+                };
+            }
+
+            // HSL/HSLA
+            const hslMatch = input.match(/^hsla?\s*\(\s*([\d.]+)\s*[,\s]\s*([\d.]+)%?\s*[,\s]\s*([\d.]+)%?(?:\s*[,\/]\s*([\d.]+%?))?\s*\)$/);
+            if (hslMatch) {
+                return hslToRgb({
+                    h: parseFloat(hslMatch[1]),
+                    s: parseFloat(hslMatch[2]),
+                    l: parseFloat(hslMatch[3]),
+                    a: hslMatch[4] ? (hslMatch[4].endsWith('%') ? parseFloat(hslMatch[4]) / 100 : parseFloat(hslMatch[4])) : 1
+                });
+            }
+
+            // HWB
+            const hwbMatch = input.match(/^hwb\s*\(\s*([\d.]+)\s+(\d+(?:\.\d+)?)%?\s+(\d+(?:\.\d+)?)%?(?:\s*\/\s*([\d.]+%?))?\s*\)$/);
+            if (hwbMatch) {
+                return hwbToRgb({
+                    h: parseFloat(hwbMatch[1]),
+                    w: parseFloat(hwbMatch[2]),
+                    b: parseFloat(hwbMatch[3]),
+                    a: hwbMatch[4] ? (hwbMatch[4].endsWith('%') ? parseFloat(hwbMatch[4]) / 100 : parseFloat(hwbMatch[4])) : 1
+                });
+            }
+
+            // LAB
+            const labMatch = input.match(/^lab\s*\(\s*([\d.]+)%?\s+([-\d.]+)%?\s+([-\d.]+)%?(?:\s*\/\s*([\d.]+%?))?\s*\)$/);
+            if (labMatch) {
+                return labToRgb({
+                    l: parseFloat(labMatch[1]),
+                    a: parseFloat(labMatch[2]),
+                    b: parseFloat(labMatch[3]),
+                    alpha: labMatch[4] ? (labMatch[4].endsWith('%') ? parseFloat(labMatch[4]) / 100 : parseFloat(labMatch[4])) : 1
+                });
+            }
+
+            // LCH
+            const lchMatch = input.match(/^lch\s*\(\s*([\d.]+)%?\s+([\d.]+)%?\s+([\d.]+)(?:\s*\/\s*([\d.]+%?))?\s*\)$/);
+            if (lchMatch) {
+                return lchToRgb({
+                    l: parseFloat(lchMatch[1]),
+                    c: parseFloat(lchMatch[2]),
+                    h: parseFloat(lchMatch[3]),
+                    alpha: lchMatch[4] ? (lchMatch[4].endsWith('%') ? parseFloat(lchMatch[4]) / 100 : parseFloat(lchMatch[4])) : 1
+                });
+            }
+
+            // OKLAB
+            const oklabMatch = input.match(/^oklab\s*\(\s*([\d.]+)%?\s+([-\d.]+)%?\s+([-\d.]+)%?(?:\s*\/\s*([\d.]+%?))?\s*\)$/);
+            if (oklabMatch) {
+                // OKLAB L is 0-1, but CSS uses 0-100% or 0-1
+                let l = parseFloat(oklabMatch[1]);
+                if (l > 1) l /= 100; // if percentage
+                return oklabToRgb({
+                    l,
+                    a: parseFloat(oklabMatch[2]),
+                    b: parseFloat(oklabMatch[3]),
+                    alpha: oklabMatch[4] ? (oklabMatch[4].endsWith('%') ? parseFloat(oklabMatch[4]) / 100 : parseFloat(oklabMatch[4])) : 1
+                });
+            }
+
+            // OKLCH
+            const oklchMatch = input.match(/^oklch\s*\(\s*([\d.]+)%?\s+([\d.]+)%?\s+([\d.]+)(?:\s*\/\s*([\d.]+%?))?\s*\)$/);
+            if (oklchMatch) {
+                let l = parseFloat(oklchMatch[1]);
+                if (l > 1) l /= 100;
+                return oklchToRgb({
+                    l,
+                    c: parseFloat(oklchMatch[2]),
+                    h: parseFloat(oklchMatch[3]),
+                    alpha: oklchMatch[4] ? (oklchMatch[4].endsWith('%') ? parseFloat(oklchMatch[4]) / 100 : parseFloat(oklchMatch[4])) : 1
+                });
+            }
+
+            return null;
+        }
+
+        // === Format outputs ===
+
+        function formatAll(rgb) {
+            const hsl = rgbToHsl(rgb);
+            const hwb = rgbToHwb(rgb);
+            const lab = rgbToLab(rgb);
+            const lch = rgbToLch(rgb);
+            const oklab = rgbToOklab(rgb);
+            const oklch = rgbToOklch(rgb);
+
+            const alpha = rgb.a < 1 ? ` / ${round(rgb.a)}` : '';
+            const alphaComma = rgb.a < 1 ? `, ${round(rgb.a)}` : '';
+
+            return {
+                hex: rgbToHex(rgb),
+                rgb: `rgb(${Math.round(rgb.r)} ${Math.round(rgb.g)} ${Math.round(rgb.b)}${alpha})`,
+                hsl: `hsl(${round(hsl.h, 1)} ${round(hsl.s, 1)}% ${round(hsl.l, 1)}%${alpha})`,
+                hwb: `hwb(${round(hwb.h, 1)} ${round(hwb.w, 1)}% ${round(hwb.b, 1)}%${alpha})`,
+                lab: `lab(${round(lab.l, 1)}% ${round(lab.a, 2)} ${round(lab.b, 2)}${alpha})`,
+                lch: `lch(${round(lch.l, 1)}% ${round(lch.c, 2)} ${round(lch.h, 1)}${alpha})`,
+                oklab: `oklab(${round(oklab.l, 3)} ${round(oklab.a, 4)} ${round(oklab.b, 4)}${alpha})`,
+                oklch: `oklch(${round(oklch.l, 3)} ${round(oklch.c, 4)} ${round(oklch.h, 1)}${alpha})`
+            };
+        }
+
+        // === DOM ===
+
+        const colorInput = document.getElementById('colorInput');
+        const colorPreview = document.getElementById('colorPreview');
+        const errorBanner = document.getElementById('errorBanner');
+        const formatCards = document.querySelectorAll('.format-card');
+
+        function updateDisplay(input) {
+            const rgb = parseColor(input);
+
+            if (!input.trim()) {
+                errorBanner.style.display = 'none';
+                colorPreview.style.backgroundColor = 'transparent';
+                formatCards.forEach(card => {
+                    card.querySelector('.format-value').textContent = '—';
+                    card.querySelector('.format-value').classList.add('empty');
+                });
+                return;
+            }
+
+            if (!rgb) {
+                errorBanner.style.display = 'block';
+                errorBanner.textContent = 'Could not parse color. Try: #ff6b6b, rgb(255 107 107), hsl(0 71% 71%), oklch(0.7 0.15 25)';
+                colorPreview.style.backgroundColor = 'transparent';
+                return;
+            }
+
+            errorBanner.style.display = 'none';
+
+            // Update preview
+            const previewColor = rgb.a < 1
+                ? `rgba(${Math.round(rgb.r)}, ${Math.round(rgb.g)}, ${Math.round(rgb.b)}, ${rgb.a})`
+                : `rgb(${Math.round(rgb.r)}, ${Math.round(rgb.g)}, ${Math.round(rgb.b)})`;
+            colorPreview.style.backgroundColor = previewColor;
+
+            // Update all formats
+            const formats = formatAll(rgb);
+            formatCards.forEach(card => {
+                const format = card.dataset.format;
+                const valueEl = card.querySelector('.format-value');
+                valueEl.textContent = formats[format];
+                valueEl.classList.remove('empty');
+            });
+        }
+
+        colorInput.addEventListener('input', (e) => updateDisplay(e.target.value));
+
+        // Copy buttons
+        formatCards.forEach(card => {
+            const btn = card.querySelector('.copy-btn');
+            const valueEl = card.querySelector('.format-value');
+
+            btn.addEventListener('click', () => {
+                if (valueEl.classList.contains('empty')) return;
+                navigator.clipboard.writeText(valueEl.textContent).then(() => {
+                    const originalText = btn.textContent;
+                    btn.textContent = 'Copied!';
+                    btn.classList.add('copied');
+                    setTimeout(() => {
+                        btn.textContent = originalText;
+                        btn.classList.remove('copied');
+                    }, 2000);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

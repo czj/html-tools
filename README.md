@@ -6,6 +6,7 @@ A collection of simple, browser-based utilities. No server required - just open 
 
 - **JSON to YAML Converter** - Real-time JSON to YAML conversion
 - **Base64 Encoder/Decoder** - Encode and decode Base64 strings
+- **Color Converter** - Convert between HEX, RGB, HSL, HWB, LAB, LCH, OKLAB, OKLCH
 
 ## Usage
 
