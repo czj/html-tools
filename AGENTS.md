@@ -6,6 +6,15 @@ Simple, browser-based utilities. No build step. No frameworks. Just HTML, CSS, a
 
 ## Code Style
 
+### Accessibility (WCAG)
+- Always write accessible HTML
+- Use semantic elements (`<header>`, `<main>`, `<nav>`, `<button>`, etc.)
+- Include proper `aria-` attributes where needed
+- Ensure sufficient color contrast (WCAG AA minimum)
+- All interactive elements must be keyboard accessible
+- Form inputs must have associated labels
+- Images need meaningful `alt` text
+
 ### No External Services from Big Tech
 - **NO Google Fonts** - Use system font stacks instead
 - **NO Google CDN, Amazon CloudFront, or similar**
