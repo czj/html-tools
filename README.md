@@ -23,6 +23,7 @@ A collection of simple, browser-based utilities. No server required - just open 
 **Parsers/Analyzers**
 - URL Parser - Decompose URL into components
 - Regex Tester - Test JS regex with highlighting
+- Clipboard Viewer - Inspect all clipboard formats and data
 
 **Other Tools**
 - Markdown Preview - Live markdown to HTML

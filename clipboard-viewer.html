@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clipboard Viewer</title>
+    <link rel="stylesheet" href="common.css">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .paste-zone {
+            background: var(--card-bg);
+            border: 2px dashed var(--input-border);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            text-align: center;
+            margin: 0 auto 24px;
+            max-width: 600px;
+            width: 100%;
+            transition: border-color 0.2s, background-color 0.2s;
+        }
+
+        .paste-zone:focus-within {
+            border-color: var(--accent-blue);
+        }
+
+        .paste-zone.has-content {
+            border-color: var(--accent-mint);
+            border-style: solid;
+        }
+
+        .paste-zone-icon {
+            width: 48px;
+            height: 48px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .paste-zone.has-content .paste-zone-icon {
+            color: var(--accent-mint);
+        }
+
+        .paste-zone-text {
+            color: var(--text-secondary);
+            font-size: 0.9375rem;
+            margin: 0;
+        }
+
+        .paste-zone.has-content .paste-zone-text {
+            color: var(--accent-mint);
+        }
+
+        .paste-zone-hint {
+            color: var(--text-muted);
+            font-size: 0.8125rem;
+            margin: 8px 0 0;
+        }
+
+        .paste-zone.has-content .paste-zone-hint {
+            display: none;
+        }
+
+        #output {
+            max-width: 900px;
+            width: 100%;
+            margin: 0 auto;
+            display: none;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        #output.visible {
+            display: flex;
+        }
+
+        .format-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+        }
+
+        .format-header {
+            padding: 12px 16px;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--card-border);
+            font-weight: 600;
+            font-size: 0.8125rem;
+            color: var(--accent-blue);
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+        }
+
+        .format-content {
+            padding: 16px;
+            max-height: 300px;
+            overflow: auto;
+        }
+
+        .format-content pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+            font-size: 0.8125rem;
+            line-height: 1.6;
+            color: var(--text-primary);
+        }
+
+        .format-content img {
+            max-width: 100%;
+            height: auto;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--card-border);
+        }
+
+        .file-entry {
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .file-entry:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .file-info {
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .empty-note {
+            color: var(--text-muted);
+            font-style: italic;
+            font-size: 0.875rem;
+        }
+
+        .event-info {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+        }
+
+        .event-info strong {
+            color: var(--text-primary);
+        }
+
+        @media (max-width: 768px) {
+            .paste-zone {
+                padding: 24px 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <a href="index.html" class="back-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        All Tools
+    </a>
+
+    <header>
+        <h1>Clipboard Viewer</h1>
+        <p class="subtitle">Inspect all clipboard formats and data</p>
+    </header>
+
+    <div class="controls">
+        <button id="clearBtn" class="secondary">Clear</button>
+    </div>
+
+    <main style="flex: 1; padding: 0 24px 24px;">
+        <div id="pasteZone" class="paste-zone" tabindex="0">
+            <svg class="paste-zone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+            </svg>
+            <p class="paste-zone-text">Paste anywhere on this page</p>
+            <p class="paste-zone-hint">Ctrl+V or ⌘V</p>
+        </div>
+
+        <div id="output"></div>
+    </main>
+
+    <script>
+        const pasteZone = document.getElementById('pasteZone');
+        const output = document.getElementById('output');
+        const clearBtn = document.getElementById('clearBtn');
+
+        function handlePaste(event) {
+            event.preventDefault();
+            const clipboardData = event.clipboardData || window.clipboardData;
+            output.innerHTML = '';
+
+            if (!clipboardData) {
+                output.innerHTML = '<div class="format-card"><div class="format-content"><p class="empty-note">Could not access clipboard data.</p></div></div>';
+                output.classList.add('visible');
+                return;
+            }
+
+            const formats = clipboardData.types;
+            const files = clipboardData.files;
+            const items = clipboardData.items;
+
+            if (formats.length === 0 && files.length === 0) {
+                output.innerHTML = '<div class="format-card"><div class="format-content"><p class="empty-note">No data found in clipboard.</p></div></div>';
+                output.classList.add('visible');
+                return;
+            }
+
+            pasteZone.classList.add('has-content');
+            pasteZone.querySelector('.paste-zone-text').textContent = '✓ Clipboard captured';
+
+            formats.forEach(format => {
+                const card = document.createElement('div');
+                card.className = 'format-card';
+
+                const header = document.createElement('div');
+                header.className = 'format-header';
+                header.textContent = format;
+                card.appendChild(header);
+
+                const content = document.createElement('div');
+                content.className = 'format-content';
+                let contentDisplayed = false;
+
+                // Handle Files format
+                if (format === 'Files' && files.length > 0) {
+                    Array.from(files).forEach(file => {
+                        const fileContainer = document.createElement('div');
+                        fileContainer.className = 'file-entry';
+
+                        const fileInfo = document.createElement('div');
+                        fileInfo.className = 'file-info';
+                        fileInfo.textContent = `${file.name} (${file.type || 'unknown'}, ${formatBytes(file.size)})`;
+                        fileContainer.appendChild(fileInfo);
+
+                        if (file.type.startsWith('image/')) {
+                            const img = document.createElement('img');
+                            const objectURL = URL.createObjectURL(file);
+                            img.src = objectURL;
+                            img.alt = file.name;
+                            img.onload = () => URL.revokeObjectURL(objectURL);
+                            fileContainer.appendChild(img);
+                        }
+
+                        content.appendChild(fileContainer);
+                    });
+                    contentDisplayed = true;
+                }
+                // Handle image formats
+                else if (format.startsWith('image/') && items) {
+                    for (let i = 0; i < items.length; i++) {
+                        const item = items[i];
+                        if (item.kind === 'file' && item.type === format) {
+                            const file = item.getAsFile();
+                            if (file) {
+                                const fileInfo = document.createElement('div');
+                                fileInfo.className = 'file-info';
+                                fileInfo.textContent = `${format} (${formatBytes(file.size)})`;
+                                content.appendChild(fileInfo);
+
+                                const img = document.createElement('img');
+                                const objectURL = URL.createObjectURL(file);
+                                img.src = objectURL;
+                                img.alt = 'Pasted image';
+                                img.onload = () => URL.revokeObjectURL(objectURL);
+                                content.appendChild(img);
+                                contentDisplayed = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Default text handling
+                if (!contentDisplayed) {
+                    const pre = document.createElement('pre');
+                    let data = '';
+
+                    try {
+                        data = clipboardData.getData(format);
+                        if (!data && format === 'Files') {
+                            data = '(No files)';
+                        } else if (!data) {
+                            data = '(Empty)';
+                        }
+                    } catch (e) {
+                        data = `(Unable to retrieve: ${e.message})`;
+                    }
+
+                    pre.textContent = data;
+                    content.appendChild(pre);
+                }
+
+                card.appendChild(content);
+                output.appendChild(card);
+            });
+
+            // Event info
+            const eventInfo = document.createElement('div');
+            eventInfo.className = 'event-info';
+            eventInfo.innerHTML = `
+                <strong>Formats:</strong> ${formats.length} (${formats.join(', ') || 'none'})<br>
+                <strong>Files:</strong> ${files.length}<br>
+                <strong>Items:</strong> ${items ? items.length : 'N/A'}
+            `;
+            output.appendChild(eventInfo);
+
+            output.classList.add('visible');
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        function reset() {
+            output.innerHTML = '';
+            output.classList.remove('visible');
+            pasteZone.classList.remove('has-content');
+            pasteZone.querySelector('.paste-zone-text').textContent = 'Paste anywhere on this page';
+        }
+
+        document.addEventListener('paste', handlePaste);
+        clearBtn.addEventListener('click', reset);
+    </script>
+</body>
+</html>
