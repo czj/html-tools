@@ -20,10 +20,13 @@ A collection of simple, browser-based utilities. No server required - just open 
 - HTML Entity Encoder - Bidirectional real-time
 - JWT Decoder - Decode and inspect tokens
 
-**Other Tools**
+**Parsers/Analyzers**
+- URL Parser - Decompose URL into components
 - Regex Tester - Test JS regex with highlighting
+
+**Other Tools**
 - Markdown Preview - Live markdown to HTML
-- Diff Checker - Compare text with colored output
+- Text Diff - Compare text with colored output
 
 ## Usage
 

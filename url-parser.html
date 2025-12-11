@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Parser</title>
+    <link rel="stylesheet" href="common.css">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .parser-section {
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .url-input-container {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .url-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--input-border);
+            border-radius: var(--radius-md);
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+            font-size: 0.875rem;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            outline: none;
+            box-shadow: var(--shadow-xs);
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .url-input:hover {
+            border-color: var(--text-muted);
+        }
+
+        .url-input:focus {
+            border-color: var(--input-border-focus);
+            box-shadow: var(--shadow-xs), 0 0 0 3px var(--ring-color);
+        }
+
+        .url-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .results-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .results-header {
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--card-border);
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+        }
+
+        .result-row {
+            display: flex;
+            border-bottom: 1px solid var(--card-border);
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .result-row:last-child {
+            border-bottom: none;
+        }
+
+        .result-row:hover {
+            background: rgba(77, 150, 255, 0.05);
+        }
+
+        .result-row.copied {
+            background: rgba(107, 203, 119, 0.1);
+        }
+
+        .result-label {
+            width: 140px;
+            flex-shrink: 0;
+            padding: 12px 16px;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            border-right: 1px solid var(--card-border);
+        }
+
+        .result-value {
+            flex: 1;
+            padding: 12px 16px;
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+            font-size: 0.8125rem;
+            color: var(--text-primary);
+            word-break: break-all;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .result-value .copy-hint {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            opacity: 0;
+            transition: opacity 0.15s;
+            white-space: nowrap;
+        }
+
+        .result-row:hover .copy-hint {
+            opacity: 1;
+        }
+
+        .empty-value {
+            color: var(--text-muted);
+            font-style: italic;
+            font-family: inherit;
+        }
+
+        .params-section {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+        }
+
+        .params-header {
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--card-border);
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .params-count {
+            background: var(--accent-blue);
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        .param-row {
+            display: flex;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .param-row:last-child {
+            border-bottom: none;
+        }
+
+        .param-key {
+            width: 200px;
+            flex-shrink: 0;
+            padding: 12px 16px;
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            color: var(--accent-blue);
+            border-right: 1px solid var(--card-border);
+            word-break: break-all;
+        }
+
+        .param-value {
+            flex: 1;
+            padding: 12px 16px;
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+            font-size: 0.8125rem;
+            color: var(--text-primary);
+            word-break: break-all;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            transition: background 0.15s;
+        }
+
+        .param-value:hover {
+            background: rgba(77, 150, 255, 0.05);
+        }
+
+        .param-value.copied {
+            background: rgba(107, 203, 119, 0.1);
+        }
+
+        .param-value .copy-hint {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            opacity: 0;
+            transition: opacity 0.15s;
+            white-space: nowrap;
+        }
+
+        .param-value:hover .copy-hint {
+            opacity: 1;
+        }
+
+        .param-decoded {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            margin-top: 4px;
+        }
+
+        .no-params {
+            padding: 24px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        .error-state {
+            display: none;
+            padding: 16px 20px;
+            background: var(--accent-coral);
+            color: white;
+            font-size: 0.875rem;
+            border-radius: var(--radius-md);
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 640px) {
+            .result-label {
+                width: 100px;
+            }
+            .param-key {
+                width: 120px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <a href="index.html" class="back-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        All Tools
+    </a>
+
+    <header>
+        <h1>URL Parser</h1>
+        <p class="subtitle">Decompose and analyze URL components</p>
+    </header>
+
+    <div class="parser-section">
+        <div class="url-input-container">
+            <input type="text" id="urlInput" class="url-input" placeholder="Paste a URL to parse... (e.g., https://example.com/path?key=value#section)" autofocus>
+        </div>
+
+        <div id="errorMessage" class="error-state"></div>
+
+        <div class="results-card">
+            <div class="results-header">URL Components</div>
+            <div id="resultsBody">
+                <div class="result-row" data-field="href">
+                    <div class="result-label">Full URL</div>
+                    <div class="result-value"><span class="empty-value">—</span><span class="copy-hint">Click to copy</span></div>
+                </div>
+                <div class="result-row" data-field="protocol">
+                    <div class="result-label">Protocol</div>
+                    <div class="result-value"><span class="empty-value">—</span><span class="copy-hint">Click to copy</span></div>
+                </div>
+                <div class="result-row" data-field="hostname">
+                    <div class="result-label">Hostname</div>
+                    <div class="result-value"><span class="empty-value">—</span><span class="copy-hint">Click to copy</span></div>
+                </div>
+                <div class="result-row" data-field="port">
+                    <div class="result-label">Port</div>
+                    <div class="result-value"><span class="empty-value">—</span><span class="copy-hint">Click to copy</span></div>
+                </div>
+                <div class="result-row" data-field="pathname">
+                    <div class="result-label">Path</div>
+                    <div class="result-value"><span class="empty-value">—</span><span class="copy-hint">Click to copy</span></div>
+                </div>
+                <div class="result-row" data-field="search">
+                    <div class="result-label">Query String</div>
+                    <div class="result-value"><span class="empty-value">—</span><span class="copy-hint">Click to copy</span></div>
+                </div>
+                <div class="result-row" data-field="hash">
+                    <div class="result-label">Hash / Anchor</div>
+                    <div class="result-value"><span class="empty-value">—</span><span class="copy-hint">Click to copy</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="params-section">
+            <div class="params-header">
+                <span>Query Parameters</span>
+                <span id="paramsCount" class="params-count" style="display: none;">0</span>
+            </div>
+            <div id="paramsBody">
+                <div class="no-params">No query parameters</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const urlInput = document.getElementById('urlInput');
+        const errorMessage = document.getElementById('errorMessage');
+        const paramsBody = document.getElementById('paramsBody');
+        const paramsCount = document.getElementById('paramsCount');
+
+        function copyToClipboard(text, element) {
+            if (!text || text === '—') return;
+
+            navigator.clipboard.writeText(text).then(() => {
+                element.classList.add('copied');
+                const hint = element.querySelector('.copy-hint');
+                if (hint) {
+                    const original = hint.textContent;
+                    hint.textContent = 'Copied!';
+                    hint.style.opacity = '1';
+
+                    setTimeout(() => {
+                        element.classList.remove('copied');
+                        hint.textContent = original;
+                        hint.style.opacity = '';
+                    }, 1500);
+                }
+            });
+        }
+
+        function setResultValue(field, value) {
+            const row = document.querySelector(`[data-field="${field}"]`);
+            if (!row) return;
+
+            const valueEl = row.querySelector('.result-value');
+            const span = valueEl.querySelector('span:first-child');
+
+            if (value) {
+                span.textContent = value;
+                span.classList.remove('empty-value');
+            } else {
+                span.textContent = '—';
+                span.classList.add('empty-value');
+            }
+        }
+
+        function parseURL() {
+            const input = urlInput.value.trim();
+
+            // Reset
+            errorMessage.style.display = 'none';
+            document.querySelectorAll('.result-value span:first-child').forEach(el => {
+                el.textContent = '—';
+                el.classList.add('empty-value');
+            });
+            paramsBody.innerHTML = '<div class="no-params">No query parameters</div>';
+            paramsCount.style.display = 'none';
+
+            if (!input) return;
+
+            try {
+                // Try to parse the URL, add protocol if missing
+                let urlString = input;
+                if (!input.match(/^[a-zA-Z][a-zA-Z0-9+.-]*:/)) {
+                    urlString = 'https://' + input;
+                }
+
+                const url = new URL(urlString);
+
+                // Set component values
+                setResultValue('href', url.href);
+                setResultValue('protocol', url.protocol);
+                setResultValue('hostname', url.hostname);
+                setResultValue('port', url.port || '(default)');
+                setResultValue('pathname', url.pathname);
+                setResultValue('search', url.search || '');
+                setResultValue('hash', url.hash || '');
+
+                // Parse query parameters
+                const params = new URLSearchParams(url.search);
+                const paramEntries = Array.from(params.entries());
+
+                if (paramEntries.length > 0) {
+                    paramsCount.textContent = paramEntries.length;
+                    paramsCount.style.display = 'inline';
+
+                    paramsBody.innerHTML = paramEntries.map(([key, value]) => {
+                        const decodedKey = decodeURIComponent(key);
+                        const decodedValue = decodeURIComponent(value);
+                        const showDecoded = (key !== decodedKey || value !== decodedValue);
+
+                        return `
+                            <div class="param-row">
+                                <div class="param-key">${escapeHtml(key)}</div>
+                                <div class="param-value" data-value="${escapeHtml(decodedValue)}">
+                                    <div>
+                                        <div>${escapeHtml(value) || '<em class="empty-value">(empty)</em>'}</div>
+                                        ${showDecoded ? `<div class="param-decoded">Decoded: ${escapeHtml(decodedValue)}</div>` : ''}
+                                    </div>
+                                    <span class="copy-hint">Click to copy</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    // Add click handlers for param values
+                    paramsBody.querySelectorAll('.param-value').forEach(el => {
+                        el.addEventListener('click', () => {
+                            copyToClipboard(el.dataset.value, el);
+                        });
+                    });
+                }
+
+            } catch (e) {
+                errorMessage.textContent = 'Invalid URL: ' + e.message;
+                errorMessage.style.display = 'block';
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        urlInput.addEventListener('input', parseURL);
+
+        // Click to copy for result rows
+        document.querySelectorAll('.result-row').forEach(row => {
+            row.addEventListener('click', () => {
+                const valueSpan = row.querySelector('.result-value span:first-child');
+                copyToClipboard(valueSpan.textContent, row);
+            });
+        });
+
+        // Parse initial URL from query string
+        const initialUrl = new URLSearchParams(window.location.search).get('url');
+        if (initialUrl) {
+            urlInput.value = initialUrl;
+            parseURL();
+        }
+    </script>
+</body>
+</html>
