@@ -30,6 +30,7 @@ A collection of simple, browser-based utilities. No server required - just open 
 - Markdown Preview - Live markdown to HTML
 - Paste Rich Text - Extract HTML from pasted rich text
 - Diff - Compare text with colored output
+- OCR - Extract text from images and PDFs (Tesseract.js)
 
 ## Usage
 

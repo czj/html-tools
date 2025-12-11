@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR</title>
+    <link rel="stylesheet" href="common.css">
+    <script type="module">
+        import pdfjsDist from 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.2.67/+esm';
+        pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.2.67/build/pdf.worker.min.mjs";
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        main {
+            flex: 1;
+            max-width: 900px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 0 24px 24px;
+        }
+
+        .drop-zone {
+            background: var(--card-bg);
+            border: 2px dashed var(--input-border);
+            border-radius: var(--radius-lg);
+            padding: 48px 32px;
+            text-align: center;
+            transition: border-color 0.2s, background-color 0.2s;
+            cursor: pointer;
+            margin-bottom: 24px;
+        }
+
+        .drop-zone:hover,
+        .drop-zone.dragover {
+            border-color: var(--accent-blue);
+            background: color-mix(in srgb, var(--accent-blue) 5%, var(--card-bg));
+        }
+
+        .drop-zone.processing {
+            cursor: wait;
+            border-color: var(--accent-yellow);
+            border-style: solid;
+        }
+
+        .drop-zone-icon {
+            width: 48px;
+            height: 48px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .drop-zone-text {
+            color: var(--text-secondary);
+            font-size: 0.9375rem;
+            margin: 0 0 8px;
+        }
+
+        .drop-zone-hint {
+            color: var(--text-muted);
+            font-size: 0.8125rem;
+            margin: 0;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        #output {
+            display: none;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        #output.visible {
+            display: flex;
+        }
+
+        .page-result {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+        }
+
+        .page-header {
+            padding: 12px 16px;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--card-border);
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .page-header .label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .page-header .icon {
+            width: 16px;
+            height: 16px;
+            color: var(--accent-coral);
+        }
+
+        .page-content {
+            display: flex;
+            gap: 16px;
+            padding: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .page-content {
+                flex-direction: column;
+            }
+        }
+
+        .page-image {
+            flex: 0 0 200px;
+        }
+
+        .page-image img {
+            width: 100%;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--card-border);
+        }
+
+        .page-text {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .page-text textarea {
+            width: 100%;
+            min-height: 150px;
+            border: 1px solid var(--input-border);
+            border-radius: var(--radius-md);
+            padding: 12px;
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+            font-size: 0.8125rem;
+            line-height: 1.6;
+            resize: vertical;
+            background: var(--input-bg);
+            color: var(--text-primary);
+        }
+
+        .page-text textarea:focus {
+            outline: none;
+            border-color: var(--input-border-focus);
+            box-shadow: 0 0 0 3px var(--ring-color);
+        }
+
+        .full-text-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+        }
+
+        .full-text-header {
+            padding: 12px 16px;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--card-border);
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .full-text-header .label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .full-text-header .icon {
+            width: 16px;
+            height: 16px;
+            color: var(--accent-mint);
+        }
+
+        #fullText {
+            width: 100%;
+            min-height: 200px;
+            border: none;
+            padding: 16px;
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+            font-size: 0.8125rem;
+            line-height: 1.6;
+            resize: vertical;
+            background: var(--card-bg);
+            color: var(--text-primary);
+        }
+
+        #fullText:focus {
+            outline: none;
+        }
+
+        .status-text {
+            font-size: 0.875rem;
+            color: var(--accent-yellow);
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            .drop-zone {
+                padding: 32px 16px;
+            }
+            .page-image {
+                flex: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <a href="index.html" class="back-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        All Tools
+    </a>
+
+    <header>
+        <h1>OCR</h1>
+        <p class="subtitle">Extract text from images and PDFs</p>
+    </header>
+
+    <div class="controls">
+        <button id="clearBtn" class="secondary">Clear</button>
+        <div class="option-group">
+            <label for="language">Language:</label>
+            <select id="language"></select>
+        </div>
+    </div>
+
+    <main>
+        <div id="dropZone" class="drop-zone">
+            <svg class="drop-zone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+            <p class="drop-zone-text" id="dropZoneText">Drop an image or PDF here, or click to select</p>
+            <p class="drop-zone-hint">Supports JPG, PNG, GIF, PDF. You can also paste from clipboard.</p>
+            <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png,.gif,image/*">
+        </div>
+
+        <div id="output">
+            <div class="full-text-card" id="fullTextCard" style="display: none;">
+                <div class="full-text-header">
+                    <span class="label">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                        Full Document
+                    </span>
+                    <button id="copyFullBtn" class="copy-btn">Copy</button>
+                </div>
+                <textarea id="fullText" readonly></textarea>
+            </div>
+
+            <div id="pages"></div>
+        </div>
+    </main>
+
+    <script>
+        const LANGUAGES = {
+            "afr": "Afrikaans", "amh": "Amharic", "ara": "Arabic", "asm": "Assamese",
+            "aze": "Azerbaijani", "bel": "Belarusian", "ben": "Bengali", "bod": "Tibetan",
+            "bos": "Bosnian", "bul": "Bulgarian", "cat": "Catalan", "ceb": "Cebuano",
+            "ces": "Czech", "chi_sim": "Chinese (Simplified)", "chi_tra": "Chinese (Traditional)",
+            "chr": "Cherokee", "cym": "Welsh", "dan": "Danish", "deu": "German",
+            "dzo": "Dzongkha", "ell": "Greek", "eng": "English", "epo": "Esperanto",
+            "est": "Estonian", "eus": "Basque", "fas": "Persian", "fin": "Finnish",
+            "fra": "French", "gle": "Irish", "glg": "Galician", "guj": "Gujarati",
+            "hat": "Haitian Creole", "heb": "Hebrew", "hin": "Hindi", "hrv": "Croatian",
+            "hun": "Hungarian", "ind": "Indonesian", "isl": "Icelandic", "ita": "Italian",
+            "jav": "Javanese", "jpn": "Japanese", "kan": "Kannada", "kat": "Georgian",
+            "kaz": "Kazakh", "khm": "Khmer", "kir": "Kyrgyz", "kor": "Korean",
+            "kur": "Kurdish", "lao": "Lao", "lat": "Latin", "lav": "Latvian",
+            "lit": "Lithuanian", "mal": "Malayalam", "mar": "Marathi", "mkd": "Macedonian",
+            "mlt": "Maltese", "msa": "Malay", "mya": "Burmese", "nep": "Nepali",
+            "nld": "Dutch", "nor": "Norwegian", "ori": "Oriya", "pan": "Punjabi",
+            "pol": "Polish", "por": "Portuguese", "pus": "Pashto", "ron": "Romanian",
+            "rus": "Russian", "san": "Sanskrit", "sin": "Sinhala", "slk": "Slovak",
+            "slv": "Slovenian", "spa": "Spanish", "sqi": "Albanian", "srp": "Serbian",
+            "swa": "Swahili", "swe": "Swedish", "syr": "Syriac", "tam": "Tamil",
+            "tel": "Telugu", "tgk": "Tajik", "tgl": "Tagalog", "tha": "Thai",
+            "tir": "Tigrinya", "tur": "Turkish", "uig": "Uyghur", "ukr": "Ukrainian",
+            "urd": "Urdu", "uzb": "Uzbek", "vie": "Vietnamese", "yid": "Yiddish"
+        };
+
+        const dropZone = document.getElementById('dropZone');
+        const dropZoneText = document.getElementById('dropZoneText');
+        const fileInput = document.getElementById('fileInput');
+        const languageSelect = document.getElementById('language');
+        const output = document.getElementById('output');
+        const pages = document.getElementById('pages');
+        const fullTextCard = document.getElementById('fullTextCard');
+        const fullText = document.getElementById('fullText');
+        const clearBtn = document.getElementById('clearBtn');
+        const copyFullBtn = document.getElementById('copyFullBtn');
+
+        let processing = false;
+
+        // Populate language select
+        for (const code of Object.values(Tesseract.languages)) {
+            const option = document.createElement('option');
+            option.value = code;
+            option.textContent = LANGUAGES[code] || code;
+            languageSelect.appendChild(option);
+        }
+
+        // Set language from URL or default
+        const urlLang = new URLSearchParams(window.location.search).get('language');
+        languageSelect.value = urlLang || 'eng';
+
+        languageSelect.addEventListener('change', () => {
+            const url = new URL(window.location);
+            if (languageSelect.value !== 'eng') {
+                url.searchParams.set('language', languageSelect.value);
+            } else {
+                url.searchParams.delete('language');
+            }
+            history.pushState({}, '', url);
+        });
+
+        dropZone.addEventListener('click', () => !processing && fileInput.click());
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            if (!processing) dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (!processing && e.dataTransfer.files[0]) {
+                processFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files[0]) processFile(e.target.files[0]);
+        });
+
+        document.addEventListener('paste', (e) => {
+            const items = Array.from(e.clipboardData.items);
+            const imageItem = items.find(item => item.type.startsWith('image/'));
+            if (imageItem && !processing) {
+                processFile(imageItem.getAsFile());
+            }
+        });
+
+        async function processFile(file) {
+            processing = true;
+            dropZone.classList.add('processing');
+            pages.innerHTML = '';
+            fullText.value = '';
+            fullTextCard.style.display = 'none';
+            output.classList.add('visible');
+
+            const worker = await Tesseract.createWorker(languageSelect.value);
+
+            if (file.type === 'application/pdf') {
+                dropZoneText.textContent = 'Loading PDF...';
+                const { numPages, imageIterator } = await convertPDFToImages(file);
+                let done = 0;
+
+                for await (const { imageURL } of imageIterator) {
+                    done++;
+                    dropZoneText.textContent = `Processing page ${done} of ${numPages}...`;
+                    const pageEl = createPageElement(done, imageURL);
+                    pages.appendChild(pageEl);
+                    const { text } = await ocrImage(worker, imageURL);
+                    pageEl.querySelector('textarea').value = text.trim();
+                    updateFullText();
+                }
+            } else {
+                dropZoneText.textContent = 'Processing image...';
+                const imageURL = URL.createObjectURL(file);
+                const pageEl = createPageElement(1, imageURL);
+                pages.appendChild(pageEl);
+                const { text } = await ocrImage(worker, imageURL);
+                pageEl.querySelector('textarea').value = text.trim();
+                updateFullText();
+            }
+
+            await worker.terminate();
+            dropZoneText.textContent = 'Drop an image or PDF here, or click to select';
+            dropZone.classList.remove('processing');
+            processing = false;
+        }
+
+        function createPageElement(pageNum, imageURL) {
+            const div = document.createElement('div');
+            div.className = 'page-result';
+            div.innerHTML = `
+                <div class="page-header">
+                    <span class="label">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                            <polyline points="21 15 16 10 5 21"></polyline>
+                        </svg>
+                        Page ${pageNum}
+                    </span>
+                    <button class="copy-btn" onclick="copyPageText(this)">Copy</button>
+                </div>
+                <div class="page-content">
+                    <div class="page-image">
+                        <img src="${imageURL}" alt="Page ${pageNum}">
+                    </div>
+                    <div class="page-text">
+                        <textarea placeholder="Extracting text..." readonly></textarea>
+                    </div>
+                </div>
+            `;
+            return div;
+        }
+
+        function updateFullText() {
+            const textareas = pages.querySelectorAll('textarea');
+            const texts = Array.from(textareas).map(ta => ta.value.trim()).filter(Boolean);
+            if (texts.length > 1) {
+                fullText.value = texts.join('\n\n');
+                fullTextCard.style.display = 'block';
+            } else {
+                fullTextCard.style.display = 'none';
+            }
+        }
+
+        async function convertPDFToImages(file) {
+            const pdf = await pdfjsLib.getDocument(URL.createObjectURL(file)).promise;
+            const numPages = pdf.numPages;
+
+            async function* images() {
+                for (let i = 1; i <= numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const viewport = page.getViewport({ scale: 1 });
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    const desiredWidth = 1000;
+                    canvas.width = desiredWidth;
+                    canvas.height = (desiredWidth / viewport.width) * viewport.height;
+                    await page.render({
+                        canvasContext: context,
+                        viewport: page.getViewport({ scale: desiredWidth / viewport.width })
+                    }).promise;
+                    yield { imageURL: canvas.toDataURL('image/jpeg', 0.8) };
+                }
+            }
+
+            return { numPages, imageIterator: images() };
+        }
+
+        async function ocrImage(worker, imageUrl) {
+            const { data: { text } } = await worker.recognize(imageUrl);
+            return { text };
+        }
+
+        window.copyPageText = function(btn) {
+            const textarea = btn.closest('.page-result').querySelector('textarea');
+            navigator.clipboard.writeText(textarea.value).then(() => {
+                const orig = btn.textContent;
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = orig;
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        };
+
+        copyFullBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(fullText.value).then(() => {
+                const orig = copyFullBtn.textContent;
+                copyFullBtn.textContent = 'Copied!';
+                copyFullBtn.classList.add('copied');
+                setTimeout(() => {
+                    copyFullBtn.textContent = orig;
+                    copyFullBtn.classList.remove('copied');
+                }, 2000);
+            });
+        });
+
+        clearBtn.addEventListener('click', () => {
+            pages.innerHTML = '';
+            fullText.value = '';
+            fullTextCard.style.display = 'none';
+            output.classList.remove('visible');
+            fileInput.value = '';
+        });
+    </script>
+</body>
+</html>
