@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Entity Encoder/Decoder</title>
+    <link rel="stylesheet" href="common.css">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+    </style>
+</head>
+<body>
+    <div class="shape-dots"></div>
+    <div class="shape-ring"></div>
+
+    <a href="index.html" class="back-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        All Tools
+    </a>
+
+    <header>
+        <h1>HTML Entity Encoder/Decoder</h1>
+        <p class="subtitle">Real-time bidirectional conversion</p>
+    </header>
+
+    <div class="controls">
+        <button id="clearBtn" class="secondary">Clear All</button>
+    </div>
+
+    <div class="container">
+        <div class="pane">
+            <div class="pane-header">
+                <span class="label">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                    </svg>
+                    Plain Text
+                </span>
+                <button id="copyPlain" class="copy-btn">Copy</button>
+            </div>
+            <textarea id="plainArea" placeholder="Type or paste text here...
+
+Special characters like <, >, &, &quot; will be encoded." spellcheck="false"></textarea>
+        </div>
+
+        <div class="pane">
+            <div class="pane-header">
+                <span class="label">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="16 18 22 12 16 6"></polyline>
+                        <polyline points="8 6 2 12 8 18"></polyline>
+                    </svg>
+                    HTML Entities
+                    <span id="statusIndicator" class="status-indicator"></span>
+                </span>
+                <button id="copyEncoded" class="copy-btn">Copy</button>
+            </div>
+            <textarea id="encodedArea" placeholder="Type or paste HTML entities here...
+
+Example: &lt;div&gt; &amp; &quot;text&quot;" spellcheck="false"></textarea>
+        </div>
+    </div>
+
+    <script>
+        const plainArea = document.getElementById('plainArea');
+        const encodedArea = document.getElementById('encodedArea');
+        const clearBtn = document.getElementById('clearBtn');
+        const copyPlain = document.getElementById('copyPlain');
+        const copyEncoded = document.getElementById('copyEncoded');
+        const statusIndicator = document.getElementById('statusIndicator');
+
+        let updating = false;
+
+        // HTML entities map
+        const encodeMap = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;',
+            '`': '&#96;'
+        };
+
+        function encodeHTML(str) {
+            return str.replace(/[&<>"'`]/g, char => encodeMap[char]);
+        }
+
+        function decodeHTML(str) {
+            const textarea = document.createElement('textarea');
+            textarea.innerHTML = str;
+            return textarea.value;
+        }
+
+        function encodePlain() {
+            if (updating) return;
+            updating = true;
+
+            statusIndicator.className = 'status-indicator';
+
+            const text = plainArea.value;
+            if (!text) {
+                encodedArea.value = '';
+                updating = false;
+                return;
+            }
+
+            encodedArea.value = encodeHTML(text);
+            statusIndicator.className = 'status-indicator valid';
+
+            updating = false;
+        }
+
+        function decodePlain() {
+            if (updating) return;
+            updating = true;
+
+            statusIndicator.className = 'status-indicator';
+
+            const encoded = encodedArea.value;
+            if (!encoded) {
+                plainArea.value = '';
+                updating = false;
+                return;
+            }
+
+            plainArea.value = decodeHTML(encoded);
+            statusIndicator.className = 'status-indicator valid';
+
+            updating = false;
+        }
+
+        plainArea.addEventListener('input', encodePlain);
+        encodedArea.addEventListener('input', decodePlain);
+
+        clearBtn.addEventListener('click', () => {
+            plainArea.value = '';
+            encodedArea.value = '';
+            statusIndicator.className = 'status-indicator';
+            plainArea.focus();
+        });
+
+        function setupCopyButton(btn, textarea) {
+            btn.addEventListener('click', () => {
+                if (!textarea.value) return;
+                navigator.clipboard.writeText(textarea.value).then(() => {
+                    const originalText = btn.textContent;
+                    btn.textContent = 'Copied!';
+                    btn.classList.add('copied');
+                    setTimeout(() => {
+                        btn.textContent = originalText;
+                        btn.classList.remove('copied');
+                    }, 2000);
+                });
+            });
+        }
+
+        setupCopyButton(copyPlain, plainArea);
+        setupCopyButton(copyEncoded, encodedArea);
+    </script>
+</body>
+</html>
