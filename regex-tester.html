@@ -357,12 +357,30 @@ Phone: (555) 123-4567</div>
             }
         }
 
-        regexInput.addEventListener('input', highlightMatches);
-        flagsInput.addEventListener('input', highlightMatches);
+        function updatePageURL() {
+            const newURL = new URL(window.location.href);
+            const pattern = regexInput.value;
+            const flags = flagsInput.value;
+            const text = highlightedText.textContent;
+
+            if (pattern) newURL.searchParams.set('pattern', pattern);
+            else newURL.searchParams.delete('pattern');
+
+            if (flags && flags !== 'g') newURL.searchParams.set('flags', flags);
+            else newURL.searchParams.delete('flags');
+
+            if (text) newURL.searchParams.set('text', text);
+            else newURL.searchParams.delete('text');
+
+            history.replaceState(null, '', newURL.toString());
+        }
+
+        regexInput.addEventListener('input', () => { highlightMatches(); updatePageURL(); });
+        flagsInput.addEventListener('input', () => { highlightMatches(); updatePageURL(); });
 
         highlightedText.addEventListener('input', () => {
-            // Preserve cursor position roughly
             highlightMatches();
+            updatePageURL();
         });
 
         // Prevent formatting on paste
@@ -371,6 +389,15 @@ Phone: (555) 123-4567</div>
             const text = e.clipboardData.getData('text/plain');
             document.execCommand('insertText', false, text);
         });
+
+        // Load from URL on init
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('pattern')) {
+            regexInput.value = params.get('pattern');
+            if (params.get('flags')) flagsInput.value = params.get('flags');
+            if (params.get('text')) highlightedText.textContent = params.get('text');
+            highlightMatches();
+        }
     </script>
 </body>
 </html>
