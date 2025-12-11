@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timestamp Converter</title>
+    <link rel="stylesheet" href="common.css">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .converter-section {
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .input-group {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            box-shadow: var(--shadow-soft);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .input-group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .input-group-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+        }
+
+        .input-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .input-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 14px 16px;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 10px;
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+            font-size: 1rem;
+            background: rgba(255,255,255,0.6);
+            outline: none;
+            transition: box-shadow 0.2s, border-color 0.2s;
+        }
+
+        .input-field:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(77, 150, 255, 0.2);
+        }
+
+        .input-field::placeholder {
+            color: var(--text-secondary);
+            font-family: inherit;
+        }
+
+        select.input-field {
+            cursor: pointer;
+        }
+
+        .output-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .output-item {
+            background: rgba(255,255,255,0.5);
+            border-radius: 10px;
+            padding: 16px;
+        }
+
+        .output-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .output-value {
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            word-break: break-all;
+        }
+
+        .now-btn {
+            padding: 14px 20px;
+            white-space: nowrap;
+        }
+
+        .datetime-inputs {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .datetime-inputs .input-field {
+            min-width: 150px;
+        }
+
+        @media (max-width: 768px) {
+            .input-row {
+                flex-direction: column;
+            }
+
+            .datetime-inputs {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="shape-dots"></div>
+    <div class="shape-ring"></div>
+
+    <a href="index.html" class="back-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        All Tools
+    </a>
+
+    <header>
+        <h1>Timestamp Converter</h1>
+        <p class="subtitle">Convert between Unix timestamps and human-readable dates</p>
+    </header>
+
+    <div class="converter-section">
+        <div class="input-group">
+            <div class="input-group-header">
+                <span class="input-group-title">Unix Timestamp</span>
+                <button id="nowBtn" class="now-btn">Now</button>
+            </div>
+            <div class="input-row">
+                <input type="text" id="timestampInput" class="input-field" placeholder="Enter Unix timestamp (seconds or milliseconds)...">
+            </div>
+        </div>
+
+        <div class="input-group">
+            <div class="input-group-header">
+                <span class="input-group-title">Date & Time</span>
+            </div>
+            <div class="datetime-inputs">
+                <input type="date" id="dateInput" class="input-field">
+                <input type="time" id="timeInput" class="input-field" step="1">
+                <select id="timezoneSelect" class="input-field">
+                    <!-- Populated by JavaScript -->
+                </select>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <div class="input-group-header">
+                <span class="input-group-title">Results</span>
+            </div>
+            <div class="output-grid">
+                <div class="output-item">
+                    <div class="output-label">Seconds</div>
+                    <div id="outputSeconds" class="output-value">—</div>
+                </div>
+                <div class="output-item">
+                    <div class="output-label">Milliseconds</div>
+                    <div id="outputMillis" class="output-value">—</div>
+                </div>
+                <div class="output-item">
+                    <div class="output-label">ISO 8601</div>
+                    <div id="outputISO" class="output-value">—</div>
+                </div>
+                <div class="output-item">
+                    <div class="output-label">UTC</div>
+                    <div id="outputUTC" class="output-value">—</div>
+                </div>
+                <div class="output-item">
+                    <div class="output-label">Local Time</div>
+                    <div id="outputLocal" class="output-value">—</div>
+                </div>
+                <div class="output-item">
+                    <div class="output-label">Relative</div>
+                    <div id="outputRelative" class="output-value">—</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const timestampInput = document.getElementById('timestampInput');
+        const dateInput = document.getElementById('dateInput');
+        const timeInput = document.getElementById('timeInput');
+        const timezoneSelect = document.getElementById('timezoneSelect');
+        const nowBtn = document.getElementById('nowBtn');
+
+        const outputSeconds = document.getElementById('outputSeconds');
+        const outputMillis = document.getElementById('outputMillis');
+        const outputISO = document.getElementById('outputISO');
+        const outputUTC = document.getElementById('outputUTC');
+        const outputLocal = document.getElementById('outputLocal');
+        const outputRelative = document.getElementById('outputRelative');
+
+        let updating = false;
+
+        // Populate timezone select
+        const timezones = Intl.supportedValuesOf('timeZone');
+        const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+        // Add common timezones at the top
+        const commonTz = ['UTC', localTz, 'America/New_York', 'America/Los_Angeles', 'Europe/London', 'Europe/Paris', 'Asia/Tokyo', 'Asia/Shanghai'];
+        const uniqueCommon = [...new Set(commonTz)];
+
+        uniqueCommon.forEach(tz => {
+            const option = document.createElement('option');
+            option.value = tz;
+            option.textContent = tz + (tz === localTz ? ' (local)' : '');
+            option.selected = tz === localTz;
+            timezoneSelect.appendChild(option);
+        });
+
+        const separator = document.createElement('option');
+        separator.disabled = true;
+        separator.textContent = '──────────';
+        timezoneSelect.appendChild(separator);
+
+        timezones.forEach(tz => {
+            if (!uniqueCommon.includes(tz)) {
+                const option = document.createElement('option');
+                option.value = tz;
+                option.textContent = tz;
+                timezoneSelect.appendChild(option);
+            }
+        });
+
+        function getRelativeTime(date) {
+            const now = new Date();
+            const diffMs = date - now;
+            const diffSec = Math.round(diffMs / 1000);
+            const diffMin = Math.round(diffSec / 60);
+            const diffHour = Math.round(diffMin / 60);
+            const diffDay = Math.round(diffHour / 24);
+
+            const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+
+            if (Math.abs(diffSec) < 60) return rtf.format(diffSec, 'second');
+            if (Math.abs(diffMin) < 60) return rtf.format(diffMin, 'minute');
+            if (Math.abs(diffHour) < 24) return rtf.format(diffHour, 'hour');
+            if (Math.abs(diffDay) < 30) return rtf.format(diffDay, 'day');
+
+            const diffMonth = Math.round(diffDay / 30);
+            if (Math.abs(diffMonth) < 12) return rtf.format(diffMonth, 'month');
+
+            const diffYear = Math.round(diffDay / 365);
+            return rtf.format(diffYear, 'year');
+        }
+
+        function updateOutputs(date) {
+            if (!date || isNaN(date.getTime())) {
+                outputSeconds.textContent = '—';
+                outputMillis.textContent = '—';
+                outputISO.textContent = '—';
+                outputUTC.textContent = '—';
+                outputLocal.textContent = '—';
+                outputRelative.textContent = '—';
+                return;
+            }
+
+            const ms = date.getTime();
+            const sec = Math.floor(ms / 1000);
+
+            outputSeconds.textContent = sec;
+            outputMillis.textContent = ms;
+            outputISO.textContent = date.toISOString();
+            outputUTC.textContent = date.toUTCString();
+            outputLocal.textContent = date.toLocaleString('en-US', {
+                dateStyle: 'full',
+                timeStyle: 'long'
+            });
+            outputRelative.textContent = getRelativeTime(date);
+        }
+
+        function parseTimestamp(value) {
+            const num = parseInt(value, 10);
+            if (isNaN(num)) return null;
+
+            // If it's likely milliseconds (> year 3000 in seconds), treat as ms
+            if (num > 32503680000) {
+                return new Date(num);
+            }
+            // Otherwise treat as seconds
+            return new Date(num * 1000);
+        }
+
+        function fromTimestamp() {
+            if (updating) return;
+            updating = true;
+
+            const value = timestampInput.value.trim();
+            if (!value) {
+                updateOutputs(null);
+                dateInput.value = '';
+                timeInput.value = '';
+                updating = false;
+                return;
+            }
+
+            const date = parseTimestamp(value);
+            if (date && !isNaN(date.getTime())) {
+                // Update date/time inputs in selected timezone
+                const tz = timezoneSelect.value;
+                const formatter = new Intl.DateTimeFormat('en-CA', {
+                    timeZone: tz,
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                });
+                const timeFormatter = new Intl.DateTimeFormat('en-GB', {
+                    timeZone: tz,
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                });
+
+                dateInput.value = formatter.format(date);
+                timeInput.value = timeFormatter.format(date);
+                updateOutputs(date);
+            } else {
+                updateOutputs(null);
+            }
+
+            updating = false;
+        }
+
+        function fromDateTime() {
+            if (updating) return;
+            updating = true;
+
+            const dateVal = dateInput.value;
+            const timeVal = timeInput.value || '00:00:00';
+            const tz = timezoneSelect.value;
+
+            if (!dateVal) {
+                timestampInput.value = '';
+                updateOutputs(null);
+                updating = false;
+                return;
+            }
+
+            try {
+                // Create date string and parse in the selected timezone
+                const dateTimeStr = `${dateVal}T${timeVal}`;
+                const date = new Date(new Date(dateTimeStr).toLocaleString('en-US', { timeZone: tz }));
+
+                // This is a bit hacky but works for timezone conversion
+                const localDate = new Date(dateTimeStr);
+                const utcDate = new Date(localDate.toLocaleString('en-US', { timeZone: 'UTC' }));
+                const tzDate = new Date(localDate.toLocaleString('en-US', { timeZone: tz }));
+                const offset = utcDate - tzDate;
+                const finalDate = new Date(localDate.getTime() + offset);
+
+                timestampInput.value = Math.floor(finalDate.getTime() / 1000);
+                updateOutputs(finalDate);
+            } catch (e) {
+                updateOutputs(null);
+            }
+
+            updating = false;
+        }
+
+        timestampInput.addEventListener('input', fromTimestamp);
+        dateInput.addEventListener('input', fromDateTime);
+        timeInput.addEventListener('input', fromDateTime);
+        timezoneSelect.addEventListener('change', fromDateTime);
+
+        nowBtn.addEventListener('click', () => {
+            const now = Date.now();
+            timestampInput.value = Math.floor(now / 1000);
+            fromTimestamp();
+        });
+
+        // Initialize with current time
+        nowBtn.click();
+    </script>
+</body>
+</html>
