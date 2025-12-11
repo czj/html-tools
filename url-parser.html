@@ -437,7 +437,23 @@
             return div.innerHTML;
         }
 
-        urlInput.addEventListener('input', parseURL);
+        function updatePageURL() {
+            const input = urlInput.value.trim();
+            const newURL = new URL(window.location.href);
+
+            if (input) {
+                newURL.searchParams.set('url', input);
+            } else {
+                newURL.searchParams.delete('url');
+            }
+
+            history.replaceState(null, '', newURL.toString());
+        }
+
+        urlInput.addEventListener('input', () => {
+            parseURL();
+            updatePageURL();
+        });
 
         // Click to copy for result rows
         document.querySelectorAll('.result-row').forEach(row => {
