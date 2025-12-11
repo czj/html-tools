@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWT Decoder</title>
+    <link rel="stylesheet" href="common.css">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .jwt-input-section {
+            max-width: 900px;
+            margin: 0 auto 30px;
+            width: 100%;
+        }
+
+        .jwt-input {
+            width: 100%;
+            padding: 18px 20px;
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+            font-size: 0.9rem;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: var(--shadow-soft);
+            outline: none;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .jwt-input:focus {
+            box-shadow: var(--shadow-elevated);
+        }
+
+        .jwt-input::placeholder {
+            color: var(--text-secondary);
+            font-family: inherit;
+        }
+
+        .output-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .output-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            box-shadow: var(--shadow-soft);
+            overflow: hidden;
+        }
+
+        .output-card .pane-header {
+            padding: 14px 20px;
+        }
+
+        .output-content {
+            padding: 20px;
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+            min-height: 200px;
+            color: var(--text-primary);
+        }
+
+        .output-content.empty {
+            color: var(--text-secondary);
+            font-family: inherit;
+        }
+
+        .jwt-part {
+            display: inline;
+        }
+
+        .jwt-header { color: #e85555; }
+        .jwt-payload { color: #9333ea; }
+        .jwt-signature { color: #4d96ff; }
+
+        .token-info {
+            background: rgba(255,255,255,0.5);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        .token-info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+        }
+
+        .token-info-label {
+            color: var(--text-secondary);
+        }
+
+        .token-info-value {
+            font-weight: 600;
+        }
+
+        .token-info-value.valid { color: var(--success-color); }
+        .token-info-value.expired { color: var(--error-color); }
+
+        .json-key { color: #059669; }
+        .json-string { color: #9333ea; }
+        .json-number { color: #e85555; }
+        .json-boolean { color: #4d96ff; }
+        .json-null { color: #6b7280; }
+
+        @media (max-width: 768px) {
+            .output-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="shape-dots"></div>
+    <div class="shape-ring"></div>
+
+    <a href="index.html" class="back-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        All Tools
+    </a>
+
+    <header>
+        <h1>JWT Decoder</h1>
+        <p class="subtitle">Decode and inspect JSON Web Tokens</p>
+    </header>
+
+    <div class="jwt-input-section">
+        <div id="errorBanner" class="error-message" style="margin-bottom: 16px; border-radius: 12px;"></div>
+        <textarea id="jwtInput" class="jwt-input" placeholder="Paste your JWT token here...
+
+Example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c" spellcheck="false"></textarea>
+    </div>
+
+    <div id="tokenInfo" class="token-info jwt-input-section" style="display: none;">
+        <div class="token-info-item">
+            <span class="token-info-label">Algorithm</span>
+            <span id="algValue" class="token-info-value">—</span>
+        </div>
+        <div class="token-info-item">
+            <span class="token-info-label">Issued At</span>
+            <span id="iatValue" class="token-info-value">—</span>
+        </div>
+        <div class="token-info-item">
+            <span class="token-info-label">Expires</span>
+            <span id="expValue" class="token-info-value">—</span>
+        </div>
+    </div>
+
+    <div class="output-grid">
+        <div class="output-card">
+            <div class="pane-header">
+                <span class="label">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                    </svg>
+                    <span class="jwt-header">Header</span>
+                </span>
+                <button id="copyHeader" class="copy-btn">Copy</button>
+            </div>
+            <div id="headerOutput" class="output-content empty">Decoded header will appear here...</div>
+        </div>
+
+        <div class="output-card">
+            <div class="pane-header">
+                <span class="label">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
+                    <span class="jwt-payload">Payload</span>
+                </span>
+                <button id="copyPayload" class="copy-btn">Copy</button>
+            </div>
+            <div id="payloadOutput" class="output-content empty">Decoded payload will appear here...</div>
+        </div>
+    </div>
+
+    <script>
+        const jwtInput = document.getElementById('jwtInput');
+        const headerOutput = document.getElementById('headerOutput');
+        const payloadOutput = document.getElementById('payloadOutput');
+        const errorBanner = document.getElementById('errorBanner');
+        const tokenInfo = document.getElementById('tokenInfo');
+        const algValue = document.getElementById('algValue');
+        const iatValue = document.getElementById('iatValue');
+        const expValue = document.getElementById('expValue');
+
+        let headerJson = '';
+        let payloadJson = '';
+
+        function base64UrlDecode(str) {
+            // Replace URL-safe characters
+            str = str.replace(/-/g, '+').replace(/_/g, '/');
+            // Pad with '=' if necessary
+            const pad = str.length % 4;
+            if (pad) str += '='.repeat(4 - pad);
+            // Decode
+            return decodeURIComponent(atob(str).split('').map(c =>
+                '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+            ).join(''));
+        }
+
+        function syntaxHighlight(json) {
+            return json.replace(
+                /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+                match => {
+                    let cls = 'json-number';
+                    if (/^"/.test(match)) {
+                        if (/:$/.test(match)) {
+                            cls = 'json-key';
+                            match = match.slice(0, -1) + '</span>:';
+                            return `<span class="${cls}">${match}`;
+                        } else {
+                            cls = 'json-string';
+                        }
+                    } else if (/true|false/.test(match)) {
+                        cls = 'json-boolean';
+                    } else if (/null/.test(match)) {
+                        cls = 'json-null';
+                    }
+                    return `<span class="${cls}">${match}</span>`;
+                }
+            );
+        }
+
+        function formatDate(timestamp) {
+            if (!timestamp) return '—';
+            const date = new Date(timestamp * 1000);
+            return date.toLocaleString();
+        }
+
+        function decodeJWT() {
+            const token = jwtInput.value.trim();
+
+            errorBanner.style.display = 'none';
+            tokenInfo.style.display = 'none';
+            headerJson = '';
+            payloadJson = '';
+
+            if (!token) {
+                headerOutput.textContent = 'Decoded header will appear here...';
+                headerOutput.classList.add('empty');
+                payloadOutput.textContent = 'Decoded payload will appear here...';
+                payloadOutput.classList.add('empty');
+                return;
+            }
+
+            const parts = token.split('.');
+            if (parts.length !== 3) {
+                errorBanner.style.display = 'block';
+                errorBanner.textContent = 'Invalid JWT format. A JWT should have 3 parts separated by dots.';
+                return;
+            }
+
+            try {
+                // Decode header
+                const header = JSON.parse(base64UrlDecode(parts[0]));
+                headerJson = JSON.stringify(header, null, 2);
+                headerOutput.innerHTML = syntaxHighlight(headerJson);
+                headerOutput.classList.remove('empty');
+
+                // Decode payload
+                const payload = JSON.parse(base64UrlDecode(parts[1]));
+                payloadJson = JSON.stringify(payload, null, 2);
+                payloadOutput.innerHTML = syntaxHighlight(payloadJson);
+                payloadOutput.classList.remove('empty');
+
+                // Show token info
+                tokenInfo.style.display = 'block';
+                algValue.textContent = header.alg || '—';
+
+                if (payload.iat) {
+                    iatValue.textContent = formatDate(payload.iat);
+                } else {
+                    iatValue.textContent = '—';
+                }
+
+                if (payload.exp) {
+                    const expDate = new Date(payload.exp * 1000);
+                    const isExpired = expDate < new Date();
+                    expValue.textContent = formatDate(payload.exp) + (isExpired ? ' (expired)' : '');
+                    expValue.className = 'token-info-value ' + (isExpired ? 'expired' : 'valid');
+                } else {
+                    expValue.textContent = '—';
+                    expValue.className = 'token-info-value';
+                }
+
+            } catch (e) {
+                errorBanner.style.display = 'block';
+                errorBanner.textContent = 'Failed to decode JWT: ' + e.message;
+            }
+        }
+
+        jwtInput.addEventListener('input', decodeJWT);
+
+        function setupCopyButton(btn, getContent) {
+            btn.addEventListener('click', () => {
+                const content = getContent();
+                if (!content) return;
+                navigator.clipboard.writeText(content).then(() => {
+                    const originalText = btn.textContent;
+                    btn.textContent = 'Copied!';
+                    btn.classList.add('copied');
+                    setTimeout(() => {
+                        btn.textContent = originalText;
+                        btn.classList.remove('copied');
+                    }, 2000);
+                });
+            });
+        }
+
+        setupCopyButton(document.getElementById('copyHeader'), () => headerJson);
+        setupCopyButton(document.getElementById('copyPayload'), () => payloadJson);
+    </script>
+</body>
+</html>
