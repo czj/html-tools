@@ -20,6 +20,7 @@ A collection of simple, browser-based utilities. No server required - just open 
 - URL Encoder/Decoder - Bidirectional real-time
 - HTML Entity Encoder - Bidirectional real-time
 - JWT Decoder - Decode and inspect tokens
+- Roman Numerals - Convert Roman numerals to numbers and vice versa
 
 **Parsers/Analyzers**
 - URL Parser - Decompose URL into components

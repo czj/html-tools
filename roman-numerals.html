@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roman Numerals</title>
+    <link rel="stylesheet" href="common.css">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .converter-section {
+            max-width: 700px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .converter-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            box-shadow: var(--shadow-sm);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .converter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .converter-label {
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+        }
+
+        .converter-input {
+            width: 100%;
+            padding: 18px 20px;
+            border: 1px solid var(--input-border);
+            border-radius: 12px;
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+            font-size: 1.5rem;
+            text-align: center;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .converter-input:hover {
+            border-color: var(--text-muted);
+        }
+
+        .converter-input:focus {
+            border-color: var(--input-border-focus);
+            box-shadow: 0 0 0 3px var(--ring-color);
+        }
+
+        .converter-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .converter-input.error {
+            border-color: var(--error-color);
+        }
+
+        .converter-input.roman {
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .error-message {
+            color: var(--error-color);
+            font-size: 0.8125rem;
+            margin-top: 8px;
+            text-align: center;
+            min-height: 20px;
+        }
+
+        .arrow-container {
+            display: flex;
+            justify-content: center;
+            margin: -8px 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .arrow-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+        }
+
+        .arrow-icon svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .reference-section {
+            margin-top: 40px;
+        }
+
+        .reference-title {
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .reference-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+        }
+
+        .reference-item {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+        }
+
+        .reference-item:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+            border-color: var(--text-muted);
+        }
+
+        .reference-item:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px var(--ring-color);
+            border-color: var(--input-border-focus);
+        }
+
+        .ref-roman {
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: 1px;
+        }
+
+        .ref-number {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .info-text {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.8125rem;
+            margin-top: 30px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 640px) {
+            .converter-input {
+                font-size: 1.25rem;
+            }
+
+            .reference-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <a href="index.html" class="back-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        All Tools
+    </a>
+
+    <header>
+        <h1>Roman Numerals</h1>
+        <p class="subtitle">Convert between Roman numerals and decimal numbers</p>
+    </header>
+
+    <div class="converter-section">
+        <div class="converter-card">
+            <div class="converter-header">
+                <label for="romanInput" class="converter-label">Roman Numeral</label>
+            </div>
+            <input type="text" id="romanInput" class="converter-input roman" placeholder="MMXXV" autocomplete="off" spellcheck="false" aria-label="Roman numeral input">
+            <div id="romanError" class="error-message"></div>
+        </div>
+
+        <div class="arrow-container">
+            <div class="arrow-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 5v14M5 12l7 7 7-7"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="converter-card">
+            <div class="converter-header">
+                <label for="numberInput" class="converter-label">Decimal Number</label>
+            </div>
+            <input type="number" id="numberInput" class="converter-input" placeholder="2025" min="1" max="3999" aria-label="Decimal number input">
+            <div id="numberError" class="error-message"></div>
+        </div>
+
+        <div class="reference-section">
+            <div class="reference-title">Basic Numerals</div>
+            <div class="reference-grid" role="list">
+                <button class="reference-item" data-value="1" role="listitem" aria-label="Set to 1">
+                    <div class="ref-roman">I</div>
+                    <div class="ref-number">1</div>
+                </button>
+                <button class="reference-item" data-value="5" role="listitem" aria-label="Set to 5">
+                    <div class="ref-roman">V</div>
+                    <div class="ref-number">5</div>
+                </button>
+                <button class="reference-item" data-value="10" role="listitem" aria-label="Set to 10">
+                    <div class="ref-roman">X</div>
+                    <div class="ref-number">10</div>
+                </button>
+                <button class="reference-item" data-value="50" role="listitem" aria-label="Set to 50">
+                    <div class="ref-roman">L</div>
+                    <div class="ref-number">50</div>
+                </button>
+                <button class="reference-item" data-value="100" role="listitem" aria-label="Set to 100">
+                    <div class="ref-roman">C</div>
+                    <div class="ref-number">100</div>
+                </button>
+                <button class="reference-item" data-value="500" role="listitem" aria-label="Set to 500">
+                    <div class="ref-roman">D</div>
+                    <div class="ref-number">500</div>
+                </button>
+                <button class="reference-item" data-value="1000" role="listitem" aria-label="Set to 1000">
+                    <div class="ref-roman">M</div>
+                    <div class="ref-number">1000</div>
+                </button>
+            </div>
+        </div>
+
+        <div class="reference-section">
+            <div class="reference-title">Subtractive Combinations</div>
+            <div class="reference-grid" role="list">
+                <button class="reference-item" data-value="4" role="listitem" aria-label="Set to 4">
+                    <div class="ref-roman">IV</div>
+                    <div class="ref-number">4</div>
+                </button>
+                <button class="reference-item" data-value="9" role="listitem" aria-label="Set to 9">
+                    <div class="ref-roman">IX</div>
+                    <div class="ref-number">9</div>
+                </button>
+                <button class="reference-item" data-value="40" role="listitem" aria-label="Set to 40">
+                    <div class="ref-roman">XL</div>
+                    <div class="ref-number">40</div>
+                </button>
+                <button class="reference-item" data-value="90" role="listitem" aria-label="Set to 90">
+                    <div class="ref-roman">XC</div>
+                    <div class="ref-number">90</div>
+                </button>
+                <button class="reference-item" data-value="400" role="listitem" aria-label="Set to 400">
+                    <div class="ref-roman">CD</div>
+                    <div class="ref-number">400</div>
+                </button>
+                <button class="reference-item" data-value="900" role="listitem" aria-label="Set to 900">
+                    <div class="ref-roman">CM</div>
+                    <div class="ref-number">900</div>
+                </button>
+            </div>
+        </div>
+
+        <p class="info-text">
+            Standard Roman numerals support values from 1 to 3999 (I to MMMCMXCIX)
+        </p>
+    </div>
+
+    <script>
+        const romanInput = document.getElementById('romanInput');
+        const numberInput = document.getElementById('numberInput');
+        const romanError = document.getElementById('romanError');
+        const numberError = document.getElementById('numberError');
+
+        let updating = false;
+
+        // Roman numeral values
+        const romanValues = [
+            { numeral: 'M', value: 1000 },
+            { numeral: 'CM', value: 900 },
+            { numeral: 'D', value: 500 },
+            { numeral: 'CD', value: 400 },
+            { numeral: 'C', value: 100 },
+            { numeral: 'XC', value: 90 },
+            { numeral: 'L', value: 50 },
+            { numeral: 'XL', value: 40 },
+            { numeral: 'X', value: 10 },
+            { numeral: 'IX', value: 9 },
+            { numeral: 'V', value: 5 },
+            { numeral: 'IV', value: 4 },
+            { numeral: 'I', value: 1 }
+        ];
+
+        // Convert number to Roman numeral
+        function toRoman(num) {
+            if (num < 1 || num > 3999 || !Number.isInteger(num)) {
+                return null;
+            }
+
+            let result = '';
+            let remaining = num;
+
+            for (const { numeral, value } of romanValues) {
+                while (remaining >= value) {
+                    result += numeral;
+                    remaining -= value;
+                }
+            }
+
+            return result;
+        }
+
+        // Convert Roman numeral to number
+        function fromRoman(str) {
+            str = str.toUpperCase().trim();
+            if (!str) return null;
+
+            // Validate characters
+            if (!/^[MDCLXVI]+$/i.test(str)) {
+                return { error: 'Invalid characters. Use only M, D, C, L, X, V, I' };
+            }
+
+            // Validate structure with strict regex
+            const validPattern = /^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$/;
+            if (!validPattern.test(str)) {
+                return { error: 'Invalid Roman numeral format' };
+            }
+
+            let result = 0;
+            let i = 0;
+
+            while (i < str.length) {
+                // Check for two-character combinations first
+                if (i + 1 < str.length) {
+                    const twoChar = str.substring(i, i + 2);
+                    const twoCharValue = romanValues.find(r => r.numeral === twoChar);
+                    if (twoCharValue) {
+                        result += twoCharValue.value;
+                        i += 2;
+                        continue;
+                    }
+                }
+
+                // Single character
+                const oneChar = str[i];
+                const oneCharValue = romanValues.find(r => r.numeral === oneChar);
+                if (oneCharValue) {
+                    result += oneCharValue.value;
+                }
+                i++;
+            }
+
+            return { value: result };
+        }
+
+        // Update from Roman input
+        function updateFromRoman() {
+            if (updating) return;
+            updating = true;
+
+            const input = romanInput.value.trim();
+            romanInput.classList.remove('error');
+            romanError.textContent = '';
+            numberError.textContent = '';
+
+            if (!input) {
+                numberInput.value = '';
+                updating = false;
+                updateURL('', '');
+                return;
+            }
+
+            const result = fromRoman(input);
+            if (result.error) {
+                romanInput.classList.add('error');
+                romanError.textContent = result.error;
+                numberInput.value = '';
+            } else {
+                numberInput.value = result.value;
+                updateURL(input.toUpperCase(), result.value);
+            }
+
+            updating = false;
+        }
+
+        // Update from number input
+        function updateFromNumber() {
+            if (updating) return;
+            updating = true;
+
+            const input = numberInput.value.trim();
+            numberInput.classList.remove('error');
+            romanError.textContent = '';
+            numberError.textContent = '';
+
+            if (!input) {
+                romanInput.value = '';
+                updating = false;
+                updateURL('', '');
+                return;
+            }
+
+            const num = parseInt(input, 10);
+
+            if (isNaN(num)) {
+                numberInput.classList.add('error');
+                numberError.textContent = 'Enter a valid number';
+                romanInput.value = '';
+            } else if (num < 1) {
+                numberInput.classList.add('error');
+                numberError.textContent = 'Number must be at least 1';
+                romanInput.value = '';
+            } else if (num > 3999) {
+                numberInput.classList.add('error');
+                numberError.textContent = 'Number must be 3999 or less';
+                romanInput.value = '';
+            } else {
+                const roman = toRoman(num);
+                romanInput.value = roman;
+                updateURL(roman, num);
+            }
+
+            updating = false;
+        }
+
+        // Update URL
+        function updateURL(roman, number) {
+            const url = new URL(window.location.href);
+            if (roman && number) {
+                url.searchParams.set('r', roman);
+                url.searchParams.set('n', number);
+            } else {
+                url.searchParams.delete('r');
+                url.searchParams.delete('n');
+            }
+            history.replaceState(null, '', url.toString());
+        }
+
+        // Event listeners
+        romanInput.addEventListener('input', updateFromRoman);
+        numberInput.addEventListener('input', updateFromNumber);
+
+        // Reference buttons
+        document.querySelectorAll('.reference-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const value = parseInt(item.dataset.value, 10);
+                numberInput.value = value;
+                updateFromNumber();
+            });
+        });
+
+        // Load from URL
+        const params = new URLSearchParams(window.location.search);
+        const initialRoman = params.get('r');
+        const initialNumber = params.get('n');
+
+        if (initialNumber) {
+            numberInput.value = initialNumber;
+            updateFromNumber();
+        } else if (initialRoman) {
+            romanInput.value = initialRoman;
+            updateFromRoman();
+        }
+    </script>
+</body>
+</html>
