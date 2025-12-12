@@ -10,6 +10,7 @@ A collection of simple, browser-based utilities. No server required - just open 
 - Color Converter - HEX, RGB, HSL, HWB, LAB, LCH, OKLAB, OKLCH
 - Temperature Converter - Celsius, Fahrenheit, Kelvin, Rankine, Delisle, Newton, Réaumur, Rømer
 - Timestamp Converter - Unix timestamps with timezone support
+- XML ↔ JSON - Bidirectional XML and JSON conversion
 
 **Formatters**
 - JSON Formatter - Pretty print or minify with key sorting
