@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IBAN Validator</title>
+    <link rel="stylesheet" href="common.css">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .validator-section {
+            max-width: 700px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .input-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            box-shadow: var(--shadow-sm);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .input-label {
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .iban-input {
+            width: 100%;
+            padding: 18px 20px;
+            border: 1px solid var(--input-border);
+            border-radius: 12px;
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+            font-size: 1.25rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .iban-input:hover {
+            border-color: var(--text-muted);
+        }
+
+        .iban-input:focus {
+            border-color: var(--input-border-focus);
+            box-shadow: 0 0 0 3px var(--ring-color);
+        }
+
+        .iban-input::placeholder {
+            color: var(--text-muted);
+            text-transform: none;
+            letter-spacing: normal;
+        }
+
+        .iban-input.valid {
+            border-color: var(--success-color);
+        }
+
+        .iban-input.invalid {
+            border-color: var(--error-color);
+        }
+
+        .status-banner {
+            padding: 14px 18px;
+            border-radius: 10px;
+            margin-top: 16px;
+            font-weight: 500;
+            display: none;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-banner.valid {
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--success-color);
+            display: flex;
+        }
+
+        .status-banner.invalid {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error-color);
+            display: flex;
+        }
+
+        .status-banner svg {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .results-section {
+            display: none;
+        }
+
+        .results-section.visible {
+            display: block;
+        }
+
+        .result-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .result-row:last-child {
+            border-bottom: none;
+        }
+
+        .result-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .result-value {
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+            font-size: 0.9375rem;
+            color: var(--text-primary);
+            font-weight: 500;
+            text-align: right;
+            word-break: break-all;
+        }
+
+        .result-value.friendly {
+            letter-spacing: 1px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-left: 6px;
+        }
+
+        .badge.qr {
+            background: rgba(77, 150, 255, 0.15);
+            color: var(--accent-blue);
+        }
+
+        .badge.sepa {
+            background: rgba(107, 203, 119, 0.15);
+            color: var(--accent-mint);
+        }
+
+        .copy-btn {
+            margin-left: 12px;
+            padding: 6px 12px;
+            font-size: 0.75rem;
+        }
+
+        .example-section {
+            margin-top: 30px;
+        }
+
+        .example-title {
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .example-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .example-item {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 12px 14px;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+            text-align: left;
+        }
+
+        .example-item:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+            border-color: var(--text-muted);
+        }
+
+        .example-item:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px var(--ring-color);
+            border-color: var(--input-border-focus);
+        }
+
+        .example-country {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .example-iban {
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+            font-size: 0.8125rem;
+            color: var(--text-primary);
+            word-break: break-all;
+        }
+
+        @media (max-width: 640px) {
+            .iban-input {
+                font-size: 1rem;
+                letter-spacing: 1px;
+            }
+
+            .result-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+            }
+
+            .result-value {
+                text-align: left;
+            }
+
+            .example-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <a href="index.html" class="back-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        All Tools
+    </a>
+
+    <header>
+        <h1>IBAN Validator</h1>
+        <p class="subtitle">Validate and parse International Bank Account Numbers</p>
+    </header>
+
+    <div class="validator-section">
+        <div class="input-card">
+            <label for="ibanInput" class="input-label">Enter IBAN</label>
+            <input type="text" id="ibanInput" class="iban-input" placeholder="e.g. DE89 3704 0044 0532 0130 00" autocomplete="off" spellcheck="false" aria-label="IBAN input">
+            <div id="statusBanner" class="status-banner">
+                <svg id="validIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+                <svg id="invalidIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+                    <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                </svg>
+                <span id="statusText"></span>
+            </div>
+        </div>
+
+        <div id="resultsSection" class="results-section">
+            <div class="result-card">
+                <div class="result-row">
+                    <span class="result-label">Friendly Format</span>
+                    <span class="result-value friendly" id="friendlyFormat"></span>
+                    <button class="copy-btn" id="copyFriendly">Copy</button>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Country</span>
+                    <span class="result-value" id="country"></span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Country Code</span>
+                    <span class="result-value" id="countryCode"></span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Check Digits</span>
+                    <span class="result-value" id="checkDigits"></span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">BBAN</span>
+                    <span class="result-value" id="bban"></span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Bank Code</span>
+                    <span class="result-value" id="bankCode"></span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Account Number</span>
+                    <span class="result-value" id="accountNumber"></span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Type</span>
+                    <span class="result-value" id="ibanType"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="example-section">
+            <div class="example-title">Example IBANs</div>
+            <div class="example-grid" role="list">
+                <button class="example-item" data-iban="DE89370400440532013000" role="listitem">
+                    <div class="example-country">Germany</div>
+                    <div class="example-iban">DE89 3704 0044 0532 0130 00</div>
+                </button>
+                <button class="example-item" data-iban="CH9300762011623852957" role="listitem">
+                    <div class="example-country">Switzerland (QR-IBAN)</div>
+                    <div class="example-iban">CH93 0076 2011 6238 5295 7</div>
+                </button>
+                <button class="example-item" data-iban="GB29NWBK60161331926819" role="listitem">
+                    <div class="example-country">United Kingdom</div>
+                    <div class="example-iban">GB29 NWBK 6016 1331 9268 19</div>
+                </button>
+                <button class="example-item" data-iban="FR1420041010050500013M02606" role="listitem">
+                    <div class="example-country">France</div>
+                    <div class="example-iban">FR14 2004 1010 0505 0001 3M02 606</div>
+                </button>
+                <button class="example-item" data-iban="NL91ABNA0417164300" role="listitem">
+                    <div class="example-country">Netherlands</div>
+                    <div class="example-iban">NL91 ABNA 0417 1643 00</div>
+                </button>
+                <button class="example-item" data-iban="ES9121000418450200051332" role="listitem">
+                    <div class="example-country">Spain</div>
+                    <div class="example-iban">ES91 2100 0418 4502 0005 1332</div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Country data from IBAN Registry (SWIFT) - verified against iban.com 2025
+        // code -> { name, length, bankCodeLength, sepa? }
+        const countries = {
+            'AD': { name: 'Andorra', length: 24, bankCodeLength: 4 },
+            'AE': { name: 'United Arab Emirates', length: 23, bankCodeLength: 3 },
+            'AL': { name: 'Albania', length: 28, bankCodeLength: 3 },
+            'AT': { name: 'Austria', length: 20, bankCodeLength: 5, sepa: true },
+            'AZ': { name: 'Azerbaijan', length: 28, bankCodeLength: 4 },
+            'BA': { name: 'Bosnia and Herzegovina', length: 20, bankCodeLength: 3 },
+            'BE': { name: 'Belgium', length: 16, bankCodeLength: 3, sepa: true },
+            'BG': { name: 'Bulgaria', length: 22, bankCodeLength: 4, sepa: true },
+            'BH': { name: 'Bahrain', length: 22, bankCodeLength: 4 },
+            'BI': { name: 'Burundi', length: 27, bankCodeLength: 5 },
+            'BR': { name: 'Brazil', length: 29, bankCodeLength: 8 },
+            'BY': { name: 'Belarus', length: 28, bankCodeLength: 4 },
+            'CH': { name: 'Switzerland', length: 21, bankCodeLength: 5, sepa: true },
+            'CR': { name: 'Costa Rica', length: 22, bankCodeLength: 4 },
+            'CY': { name: 'Cyprus', length: 28, bankCodeLength: 3, sepa: true },
+            'CZ': { name: 'Czech Republic', length: 24, bankCodeLength: 4, sepa: true },
+            'DE': { name: 'Germany', length: 22, bankCodeLength: 8, sepa: true },
+            'DJ': { name: 'Djibouti', length: 27, bankCodeLength: 5 },
+            'DK': { name: 'Denmark', length: 18, bankCodeLength: 4, sepa: true },
+            'DO': { name: 'Dominican Republic', length: 28, bankCodeLength: 4 },
+            'EE': { name: 'Estonia', length: 20, bankCodeLength: 2, sepa: true },
+            'EG': { name: 'Egypt', length: 29, bankCodeLength: 4 },
+            'ES': { name: 'Spain', length: 24, bankCodeLength: 4, sepa: true },
+            'FI': { name: 'Finland', length: 18, bankCodeLength: 3, sepa: true },
+            'FK': { name: 'Falkland Islands', length: 18, bankCodeLength: 2 },
+            'FO': { name: 'Faroe Islands', length: 18, bankCodeLength: 4, sepa: true },
+            'FR': { name: 'France', length: 27, bankCodeLength: 5, sepa: true },
+            'GB': { name: 'United Kingdom', length: 22, bankCodeLength: 4, sepa: true },
+            'GE': { name: 'Georgia', length: 22, bankCodeLength: 2 },
+            'GI': { name: 'Gibraltar', length: 23, bankCodeLength: 4, sepa: true },
+            'GL': { name: 'Greenland', length: 18, bankCodeLength: 4, sepa: true },
+            'GR': { name: 'Greece', length: 27, bankCodeLength: 3, sepa: true },
+            'GT': { name: 'Guatemala', length: 28, bankCodeLength: 4 },
+            'HN': { name: 'Honduras', length: 28, bankCodeLength: 4 },
+            'HR': { name: 'Croatia', length: 21, bankCodeLength: 7, sepa: true },
+            'HU': { name: 'Hungary', length: 28, bankCodeLength: 3, sepa: true },
+            'IE': { name: 'Ireland', length: 22, bankCodeLength: 4, sepa: true },
+            'IL': { name: 'Israel', length: 23, bankCodeLength: 3 },
+            'IQ': { name: 'Iraq', length: 23, bankCodeLength: 4 },
+            'IS': { name: 'Iceland', length: 26, bankCodeLength: 4, sepa: true },
+            'IT': { name: 'Italy', length: 27, bankCodeLength: 5, sepa: true },
+            'JO': { name: 'Jordan', length: 30, bankCodeLength: 4 },
+            'KW': { name: 'Kuwait', length: 30, bankCodeLength: 4 },
+            'KZ': { name: 'Kazakhstan', length: 20, bankCodeLength: 3 },
+            'LB': { name: 'Lebanon', length: 28, bankCodeLength: 4 },
+            'LC': { name: 'Saint Lucia', length: 32, bankCodeLength: 4 },
+            'LI': { name: 'Liechtenstein', length: 21, bankCodeLength: 5, sepa: true },
+            'LT': { name: 'Lithuania', length: 20, bankCodeLength: 5, sepa: true },
+            'LU': { name: 'Luxembourg', length: 20, bankCodeLength: 3, sepa: true },
+            'LV': { name: 'Latvia', length: 21, bankCodeLength: 4, sepa: true },
+            'LY': { name: 'Libya', length: 25, bankCodeLength: 3 },
+            'MC': { name: 'Monaco', length: 27, bankCodeLength: 5, sepa: true },
+            'MD': { name: 'Moldova', length: 24, bankCodeLength: 2 },
+            'ME': { name: 'Montenegro', length: 22, bankCodeLength: 3 },
+            'MK': { name: 'North Macedonia', length: 19, bankCodeLength: 3 },
+            'MN': { name: 'Mongolia', length: 20, bankCodeLength: 4 },
+            'MR': { name: 'Mauritania', length: 27, bankCodeLength: 5 },
+            'MT': { name: 'Malta', length: 31, bankCodeLength: 4, sepa: true },
+            'MU': { name: 'Mauritius', length: 30, bankCodeLength: 6 },
+            'NI': { name: 'Nicaragua', length: 28, bankCodeLength: 4 },
+            'NL': { name: 'Netherlands', length: 18, bankCodeLength: 4, sepa: true },
+            'NO': { name: 'Norway', length: 15, bankCodeLength: 4, sepa: true },
+            'OM': { name: 'Oman', length: 23, bankCodeLength: 3 },
+            'PK': { name: 'Pakistan', length: 24, bankCodeLength: 4 },
+            'PL': { name: 'Poland', length: 28, bankCodeLength: 8, sepa: true },
+            'PS': { name: 'Palestine', length: 29, bankCodeLength: 4 },
+            'PT': { name: 'Portugal', length: 25, bankCodeLength: 4, sepa: true },
+            'QA': { name: 'Qatar', length: 29, bankCodeLength: 4 },
+            'RO': { name: 'Romania', length: 24, bankCodeLength: 4, sepa: true },
+            'RS': { name: 'Serbia', length: 22, bankCodeLength: 3 },
+            'RU': { name: 'Russia', length: 33, bankCodeLength: 9 },
+            'SA': { name: 'Saudi Arabia', length: 24, bankCodeLength: 2 },
+            'SC': { name: 'Seychelles', length: 31, bankCodeLength: 6 },
+            'SD': { name: 'Sudan', length: 18, bankCodeLength: 2 },
+            'SE': { name: 'Sweden', length: 24, bankCodeLength: 3, sepa: true },
+            'SI': { name: 'Slovenia', length: 19, bankCodeLength: 5, sepa: true },
+            'SK': { name: 'Slovakia', length: 24, bankCodeLength: 4, sepa: true },
+            'SM': { name: 'San Marino', length: 27, bankCodeLength: 5, sepa: true },
+            'SO': { name: 'Somalia', length: 23, bankCodeLength: 4 },
+            'ST': { name: 'Sao Tome and Principe', length: 25, bankCodeLength: 4 },
+            'SV': { name: 'El Salvador', length: 28, bankCodeLength: 4 },
+            'TL': { name: 'Timor-Leste', length: 23, bankCodeLength: 3 },
+            'TN': { name: 'Tunisia', length: 24, bankCodeLength: 2 },
+            'TR': { name: 'Turkey', length: 26, bankCodeLength: 5 },
+            'UA': { name: 'Ukraine', length: 29, bankCodeLength: 6 },
+            'VA': { name: 'Vatican City', length: 22, bankCodeLength: 3, sepa: true },
+            'VG': { name: 'British Virgin Islands', length: 24, bankCodeLength: 4 },
+            'XK': { name: 'Kosovo', length: 20, bankCodeLength: 4 },
+            'YE': { name: 'Yemen', length: 30, bankCodeLength: 4 }
+        };
+
+        // Swiss QR-IBAN bank codes (30000-31999)
+        function isQrIban(countryCode, bankCode) {
+            if (countryCode !== 'CH' && countryCode !== 'LI') return false;
+            const bankNum = parseInt(bankCode, 10);
+            return bankNum >= 30000 && bankNum <= 31999;
+        }
+
+        // Validate IBAN checksum using MOD 97-10 (ISO 7064)
+        function validateChecksum(iban) {
+            // Move first 4 chars to end
+            const rearranged = iban.slice(4) + iban.slice(0, 4);
+
+            // Convert letters to numbers (A=10, B=11, etc.)
+            let numericStr = '';
+            for (const char of rearranged) {
+                if (char >= 'A' && char <= 'Z') {
+                    numericStr += (char.charCodeAt(0) - 55).toString();
+                } else {
+                    numericStr += char;
+                }
+            }
+
+            // Calculate MOD 97 using chunks (to avoid BigInt for large numbers)
+            let remainder = 0;
+            for (let i = 0; i < numericStr.length; i++) {
+                remainder = (remainder * 10 + parseInt(numericStr[i], 10)) % 97;
+            }
+
+            return remainder === 1;
+        }
+
+        // Parse and validate IBAN
+        function parseIban(input) {
+            // Remove spaces and convert to uppercase
+            const iban = input.replace(/\s+/g, '').toUpperCase();
+
+            if (!iban) {
+                return { valid: false, error: null };
+            }
+
+            // Check basic format
+            if (!/^[A-Z]{2}[0-9]{2}[A-Z0-9]+$/.test(iban)) {
+                return { valid: false, error: 'Invalid format. IBAN must start with 2 letters, 2 digits, then alphanumeric characters.' };
+            }
+
+            const countryCode = iban.slice(0, 2);
+            const checkDigits = iban.slice(2, 4);
+            const bban = iban.slice(4);
+
+            // Check country
+            const countryInfo = countries[countryCode];
+            if (!countryInfo) {
+                return { valid: false, error: 'Unknown country code: ' + countryCode };
+            }
+
+            // Check length
+            if (iban.length !== countryInfo.length) {
+                return { valid: false, error: 'Invalid length for ' + countryInfo.name + '. Expected ' + countryInfo.length + ' characters, got ' + iban.length + '.' };
+            }
+
+            // Validate checksum
+            if (!validateChecksum(iban)) {
+                return { valid: false, error: 'Invalid checksum. The IBAN digits do not match.' };
+            }
+
+            // Extract bank code and account number
+            const bankCode = bban.slice(0, countryInfo.bankCodeLength);
+            const accountNumber = bban.slice(countryInfo.bankCodeLength);
+
+            // Check for QR-IBAN
+            const qrIban = isQrIban(countryCode, bankCode);
+
+            // Format friendly (groups of 4)
+            const friendly = iban.match(/.{1,4}/g).join(' ');
+
+            return {
+                valid: true,
+                iban,
+                friendly,
+                countryCode,
+                countryName: countryInfo.name,
+                checkDigits,
+                bban,
+                bankCode,
+                accountNumber,
+                isQrIban: qrIban,
+                isSepa: countryInfo.sepa || false
+            };
+        }
+
+        // DOM elements
+        const ibanInput = document.getElementById('ibanInput');
+        const statusBanner = document.getElementById('statusBanner');
+        const validIcon = document.getElementById('validIcon');
+        const invalidIcon = document.getElementById('invalidIcon');
+        const statusText = document.getElementById('statusText');
+        const resultsSection = document.getElementById('resultsSection');
+
+        function updateDisplay() {
+            const result = parseIban(ibanInput.value);
+
+            // Reset classes
+            ibanInput.classList.remove('valid', 'invalid');
+            statusBanner.classList.remove('valid', 'invalid');
+            resultsSection.classList.remove('visible');
+            validIcon.style.display = 'none';
+            invalidIcon.style.display = 'none';
+
+            if (result.error === null && !result.valid) {
+                // Empty input
+                statusBanner.style.display = 'none';
+                return;
+            }
+
+            if (!result.valid) {
+                ibanInput.classList.add('invalid');
+                statusBanner.classList.add('invalid');
+                invalidIcon.style.display = 'block';
+                statusText.textContent = result.error;
+                return;
+            }
+
+            // Valid IBAN
+            ibanInput.classList.add('valid');
+            statusBanner.classList.add('valid');
+            validIcon.style.display = 'block';
+            statusText.textContent = 'Valid IBAN';
+
+            // Show results
+            resultsSection.classList.add('visible');
+            document.getElementById('friendlyFormat').textContent = result.friendly;
+            document.getElementById('country').textContent = result.countryName;
+            document.getElementById('countryCode').textContent = result.countryCode;
+            document.getElementById('checkDigits').textContent = result.checkDigits;
+            document.getElementById('bban').textContent = result.bban;
+            document.getElementById('bankCode').textContent = result.bankCode;
+            document.getElementById('accountNumber').textContent = result.accountNumber;
+
+            // Type badges - using DOM methods instead of innerHTML
+            const typeEl = document.getElementById('ibanType');
+            typeEl.textContent = '';
+
+            if (result.isQrIban) {
+                const qrBadge = document.createElement('span');
+                qrBadge.className = 'badge qr';
+                qrBadge.textContent = 'QR-IBAN';
+                typeEl.appendChild(qrBadge);
+            }
+            if (result.isSepa) {
+                const sepaBadge = document.createElement('span');
+                sepaBadge.className = 'badge sepa';
+                sepaBadge.textContent = 'SEPA';
+                typeEl.appendChild(sepaBadge);
+            }
+            if (!result.isQrIban && !result.isSepa) {
+                typeEl.textContent = 'Standard';
+            }
+
+            // Update URL
+            const url = new URL(window.location.href);
+            url.searchParams.set('iban', result.iban);
+            history.replaceState(null, '', url.toString());
+        }
+
+        // Event listeners
+        ibanInput.addEventListener('input', updateDisplay);
+
+        // Copy button
+        document.getElementById('copyFriendly').addEventListener('click', function() {
+            const text = document.getElementById('friendlyFormat').textContent;
+            if (!text) return;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = this;
+                const originalText = btn.textContent;
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        });
+
+        // Example buttons
+        document.querySelectorAll('.example-item').forEach(item => {
+            item.addEventListener('click', () => {
+                ibanInput.value = item.dataset.iban;
+                updateDisplay();
+            });
+        });
+
+        // Load from URL
+        const params = new URLSearchParams(window.location.search);
+        const initialIban = params.get('iban');
+        if (initialIban) {
+            ibanInput.value = initialIban;
+            updateDisplay();
+        }
+    </script>
+</body>
+</html>

@@ -28,6 +28,7 @@ A collection of simple, browser-based utilities. No server required - just open 
 - Regex Tester - Test JS regex with highlighting
 - Clipboard Viewer - Inspect all clipboard formats and data
 - EXIF Viewer - Extract metadata and GPS from images
+- IBAN Validator - Validate and parse IBAN numbers with QR-IBAN detection
 
 **Other Tools**
 - Markdown Preview - Live markdown to HTML
