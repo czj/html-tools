@@ -9,6 +9,7 @@ A collection of simple, browser-based utilities. No server required - just open 
 - CSV to JSON - Convert CSV with custom delimiters
 - Color Converter - HEX, RGB, HSL, HWB, LAB, LCH, OKLAB, OKLCH
 - Temperature Converter - Celsius, Fahrenheit, Kelvin, Rankine, Delisle, Newton, Réaumur, Rømer
+- Date-Time Converter - ISO 8601, RFC 3339, Unix timestamp, Excel, MongoDB ObjectID
 - Timestamp Converter - Unix timestamps with timezone support
 - XML ↔ JSON - Bidirectional XML and JSON conversion
 
@@ -35,6 +36,7 @@ A collection of simple, browser-based utilities. No server required - just open 
 - Paste Rich Text - Extract HTML from pasted rich text
 - Diff - Compare text with colored output
 - OCR - Extract text from images and PDFs (Tesseract.js)
+- QR Code Generator - Generate styled QR codes with PNG/SVG download
 
 ## Usage
 

@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Date-Time Converter</title>
+    <link rel="stylesheet" href="common.css">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .converter-section {
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .input-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            box-shadow: var(--shadow-sm);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .input-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .input-label {
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .datetime-input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+            font-size: 0.9375rem;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .datetime-input:hover {
+            border-color: var(--text-muted);
+        }
+
+        .datetime-input:focus {
+            border-color: var(--input-border-focus);
+            box-shadow: 0 0 0 3px var(--ring-color);
+        }
+
+        .now-btn {
+            margin-top: 24px;
+            padding: 10px 20px;
+        }
+
+        .formats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 12px;
+        }
+
+        .format-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            transition: box-shadow 0.15s;
+        }
+
+        .format-card:hover {
+            box-shadow: var(--shadow-sm);
+        }
+
+        .format-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .format-name {
+            font-weight: 600;
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .format-value {
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+            word-break: break-all;
+            line-height: 1.4;
+        }
+
+        .format-value.empty {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .copy-btn {
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            flex-shrink: 0;
+        }
+
+        .quick-dates {
+            margin-top: 24px;
+        }
+
+        .quick-title {
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .quick-grid {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .quick-btn {
+            padding: 8px 16px;
+            font-size: 0.8125rem;
+        }
+
+        .parse-input-section {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid var(--card-border);
+        }
+
+        .parse-input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+            font-size: 0.875rem;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            outline: none;
+        }
+
+        .parse-input:focus {
+            border-color: var(--input-border-focus);
+            box-shadow: 0 0 0 3px var(--ring-color);
+        }
+
+        .parse-hint {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .formats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .input-row {
+                flex-direction: column;
+            }
+
+            .format-card {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .copy-btn {
+                align-self: flex-end;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <a href="index.html" class="back-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        All Tools
+    </a>
+
+    <header>
+        <h1>Date-Time Converter</h1>
+        <p class="subtitle">Convert dates and times between various formats</p>
+    </header>
+
+    <div class="converter-section">
+        <div class="input-card">
+            <div class="input-row">
+                <div class="input-group">
+                    <label for="dateInput" class="input-label">Date</label>
+                    <input type="date" id="dateInput" class="datetime-input" aria-label="Date input">
+                </div>
+                <div class="input-group">
+                    <label for="timeInput" class="input-label">Time</label>
+                    <input type="time" id="timeInput" class="datetime-input" step="1" aria-label="Time input">
+                </div>
+            </div>
+            <button class="now-btn" id="nowBtn">Use Current Time</button>
+
+            <div class="parse-input-section">
+                <label for="parseInput" class="input-label">Or Parse a Date String / Timestamp</label>
+                <input type="text" id="parseInput" class="parse-input" placeholder="e.g. 1702400000, 2024-12-12T15:30:00Z, Dec 12 2024..." aria-label="Parse date string">
+                <p class="parse-hint">Accepts: Unix timestamp (seconds or ms), ISO 8601, RFC 2822, or natural date strings</p>
+            </div>
+        </div>
+
+        <div class="formats-grid" id="formatsGrid">
+        </div>
+
+        <div class="quick-dates">
+            <div class="quick-title">Quick References</div>
+            <div class="quick-grid">
+                <button class="quick-btn" data-date="epoch">Unix Epoch</button>
+                <button class="quick-btn" data-date="y2k">Y2K</button>
+                <button class="quick-btn" data-date="start-year">Start of Year</button>
+                <button class="quick-btn" data-date="end-year">End of Year</button>
+                <button class="quick-btn" data-date="tomorrow">Tomorrow</button>
+                <button class="quick-btn" data-date="week-ago">Week Ago</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const dateInput = document.getElementById('dateInput');
+        const timeInput = document.getElementById('timeInput');
+        const parseInput = document.getElementById('parseInput');
+        const formatsGrid = document.getElementById('formatsGrid');
+        const nowBtn = document.getElementById('nowBtn');
+
+        // Format definitions
+        const formats = [
+            { id: 'iso8601', name: 'ISO 8601', fn: d => d.toISOString() },
+            { id: 'iso9075', name: 'ISO 9075 (SQL)', fn: d => d.toISOString().replace('T', ' ').replace('Z', '') },
+            { id: 'rfc3339', name: 'RFC 3339', fn: d => d.toISOString() },
+            { id: 'rfc7231', name: 'RFC 7231 (HTTP)', fn: d => d.toUTCString() },
+            { id: 'unix', name: 'Unix Timestamp (s)', fn: d => Math.floor(d.getTime() / 1000).toString() },
+            { id: 'unixms', name: 'Unix Timestamp (ms)', fn: d => d.getTime().toString() },
+            { id: 'utc', name: 'UTC String', fn: d => d.toUTCString() },
+            { id: 'locale', name: 'Locale String', fn: d => d.toLocaleString() },
+            { id: 'localedate', name: 'Locale Date', fn: d => d.toLocaleDateString() },
+            { id: 'localetime', name: 'Locale Time', fn: d => d.toLocaleTimeString() },
+            { id: 'mongoid', name: 'MongoDB ObjectID (time)', fn: d => Math.floor(d.getTime() / 1000).toString(16).padStart(8, '0') + '0000000000000000' },
+            { id: 'excel', name: 'Excel Serial Number', fn: d => {
+                // Excel epoch is Dec 30, 1899 (accounting for the 1900 leap year bug)
+                const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+                const days = (d.getTime() - excelEpoch.getTime()) / (24 * 60 * 60 * 1000);
+                return days.toFixed(10);
+            }},
+            { id: 'relative', name: 'Relative Time', fn: d => {
+                const now = new Date();
+                const diff = d.getTime() - now.getTime();
+                const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+                const seconds = Math.round(diff / 1000);
+                const minutes = Math.round(diff / 60000);
+                const hours = Math.round(diff / 3600000);
+                const days = Math.round(diff / 86400000);
+                if (Math.abs(seconds) < 60) return rtf.format(seconds, 'second');
+                if (Math.abs(minutes) < 60) return rtf.format(minutes, 'minute');
+                if (Math.abs(hours) < 24) return rtf.format(hours, 'hour');
+                return rtf.format(days, 'day');
+            }},
+            { id: 'dayofyear', name: 'Day of Year', fn: d => {
+                const start = new Date(d.getFullYear(), 0, 0);
+                const diff = d - start;
+                const oneDay = 1000 * 60 * 60 * 24;
+                return Math.floor(diff / oneDay).toString();
+            }},
+            { id: 'weeknum', name: 'Week Number (ISO)', fn: d => {
+                const target = new Date(d.valueOf());
+                const dayNr = (d.getDay() + 6) % 7;
+                target.setDate(target.getDate() - dayNr + 3);
+                const firstThursday = target.valueOf();
+                target.setMonth(0, 1);
+                if (target.getDay() !== 4) {
+                    target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7);
+                }
+                return (1 + Math.ceil((firstThursday - target) / 604800000)).toString();
+            }},
+            { id: 'julian', name: 'Julian Day', fn: d => {
+                // Julian Day Number
+                const a = Math.floor((14 - (d.getUTCMonth() + 1)) / 12);
+                const y = d.getUTCFullYear() + 4800 - a;
+                const m = (d.getUTCMonth() + 1) + 12 * a - 3;
+                const jdn = d.getUTCDate() + Math.floor((153 * m + 2) / 5) + 365 * y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) - 32045;
+                const fraction = (d.getUTCHours() - 12) / 24 + d.getUTCMinutes() / 1440 + d.getUTCSeconds() / 86400;
+                return (jdn + fraction).toFixed(5);
+            }}
+        ];
+
+        // Create format cards
+        function createFormatCards() {
+            formatsGrid.textContent = '';
+            formats.forEach(format => {
+                const card = document.createElement('div');
+                card.className = 'format-card';
+                card.dataset.format = format.id;
+
+                const info = document.createElement('div');
+                info.className = 'format-info';
+
+                const name = document.createElement('div');
+                name.className = 'format-name';
+                name.textContent = format.name;
+
+                const value = document.createElement('div');
+                value.className = 'format-value empty';
+                value.id = 'value-' + format.id;
+                value.textContent = '—';
+
+                info.appendChild(name);
+                info.appendChild(value);
+
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'copy-btn';
+                copyBtn.textContent = 'Copy';
+                copyBtn.addEventListener('click', () => {
+                    const text = value.textContent;
+                    if (text && text !== '—') {
+                        navigator.clipboard.writeText(text).then(() => {
+                            const original = copyBtn.textContent;
+                            copyBtn.textContent = 'Copied!';
+                            copyBtn.classList.add('copied');
+                            setTimeout(() => {
+                                copyBtn.textContent = original;
+                                copyBtn.classList.remove('copied');
+                            }, 2000);
+                        });
+                    }
+                });
+
+                card.appendChild(info);
+                card.appendChild(copyBtn);
+                formatsGrid.appendChild(card);
+            });
+        }
+
+        // Update all formats
+        function updateFormats(date) {
+            if (!date || isNaN(date.getTime())) {
+                formats.forEach(format => {
+                    const el = document.getElementById('value-' + format.id);
+                    el.textContent = '—';
+                    el.classList.add('empty');
+                });
+                return;
+            }
+
+            formats.forEach(format => {
+                const el = document.getElementById('value-' + format.id);
+                try {
+                    el.textContent = format.fn(date);
+                    el.classList.remove('empty');
+                } catch (e) {
+                    el.textContent = 'Error';
+                    el.classList.add('empty');
+                }
+            });
+        }
+
+        // Get date from inputs
+        function getDateFromInputs() {
+            if (!dateInput.value) return null;
+            const dateStr = dateInput.value;
+            const timeStr = timeInput.value || '00:00:00';
+            return new Date(dateStr + 'T' + timeStr);
+        }
+
+        // Parse various date formats
+        function parseDate(str) {
+            str = str.trim();
+            if (!str) return null;
+
+            // Try Unix timestamp (seconds)
+            if (/^\d{10}$/.test(str)) {
+                return new Date(parseInt(str, 10) * 1000);
+            }
+
+            // Try Unix timestamp (milliseconds)
+            if (/^\d{13}$/.test(str)) {
+                return new Date(parseInt(str, 10));
+            }
+
+            // Try hex (MongoDB ObjectID first 8 chars)
+            if (/^[0-9a-fA-F]{24}$/.test(str)) {
+                const timestamp = parseInt(str.substring(0, 8), 16);
+                return new Date(timestamp * 1000);
+            }
+
+            // Try standard Date parsing
+            const parsed = new Date(str);
+            if (!isNaN(parsed.getTime())) {
+                return parsed;
+            }
+
+            return null;
+        }
+
+        // Update from date/time inputs
+        function updateFromInputs() {
+            parseInput.value = '';
+            const date = getDateFromInputs();
+            updateFormats(date);
+            if (date) {
+                const url = new URL(window.location.href);
+                url.searchParams.set('t', Math.floor(date.getTime() / 1000));
+                history.replaceState(null, '', url.toString());
+            }
+        }
+
+        // Update from parse input
+        function updateFromParse() {
+            const date = parseDate(parseInput.value);
+            if (date) {
+                dateInput.value = date.toISOString().split('T')[0];
+                const timeStr = date.toTimeString().split(' ')[0];
+                timeInput.value = timeStr;
+                updateFormats(date);
+            }
+        }
+
+        // Set to now
+        function setToNow() {
+            const now = new Date();
+            dateInput.value = now.toISOString().split('T')[0];
+            timeInput.value = now.toTimeString().split(' ')[0];
+            parseInput.value = '';
+            updateFormats(now);
+        }
+
+        // Quick date buttons
+        const quickDates = {
+            'epoch': () => new Date(0),
+            'y2k': () => new Date(Date.UTC(2000, 0, 1)),
+            'start-year': () => new Date(new Date().getFullYear(), 0, 1),
+            'end-year': () => new Date(new Date().getFullYear(), 11, 31, 23, 59, 59),
+            'tomorrow': () => {
+                const d = new Date();
+                d.setDate(d.getDate() + 1);
+                d.setHours(0, 0, 0, 0);
+                return d;
+            },
+            'week-ago': () => {
+                const d = new Date();
+                d.setDate(d.getDate() - 7);
+                return d;
+            }
+        };
+
+        // Event listeners
+        dateInput.addEventListener('change', updateFromInputs);
+        timeInput.addEventListener('change', updateFromInputs);
+        parseInput.addEventListener('input', updateFromParse);
+        nowBtn.addEventListener('click', setToNow);
+
+        document.querySelectorAll('.quick-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const dateKey = btn.dataset.date;
+                if (quickDates[dateKey]) {
+                    const date = quickDates[dateKey]();
+                    dateInput.value = date.toISOString().split('T')[0];
+                    timeInput.value = date.toTimeString().split(' ')[0];
+                    parseInput.value = '';
+                    updateFormats(date);
+                }
+            });
+        });
+
+        // Initialize
+        createFormatCards();
+
+        // Load from URL or set to now
+        const params = new URLSearchParams(window.location.search);
+        const initialTimestamp = params.get('t');
+        if (initialTimestamp) {
+            const date = new Date(parseInt(initialTimestamp, 10) * 1000);
+            dateInput.value = date.toISOString().split('T')[0];
+            timeInput.value = date.toTimeString().split(' ')[0];
+            updateFormats(date);
+        } else {
+            setToNow();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Generator</title>
+    <link rel="stylesheet" href="common.css">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .generator-section {
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .input-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            box-shadow: var(--shadow-sm);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .input-label {
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .text-input {
+            width: 100%;
+            padding: 16px;
+            border: 1px solid var(--input-border);
+            border-radius: 12px;
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+            font-size: 0.9375rem;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .text-input:hover {
+            border-color: var(--text-muted);
+        }
+
+        .text-input:focus {
+            border-color: var(--input-border-focus);
+            box-shadow: 0 0 0 3px var(--ring-color);
+        }
+
+        .text-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .option-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .option-group label {
+            font-weight: 500;
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+        }
+
+        .option-group select,
+        .option-group input[type="color"] {
+            padding: 10px 12px;
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            outline: none;
+        }
+
+        .option-group input[type="color"] {
+            height: 42px;
+            padding: 4px;
+            cursor: pointer;
+        }
+
+        .qr-output {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            box-shadow: var(--shadow-sm);
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
+        }
+
+        #qrcode {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 256px;
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        #qrcode canvas,
+        #qrcode svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .placeholder-text {
+            color: var(--text-muted);
+            font-size: 0.9375rem;
+        }
+
+        .download-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .download-btn {
+            padding: 12px 24px;
+            font-size: 0.9375rem;
+            min-width: 140px;
+        }
+
+        .download-btn.primary {
+            background: var(--accent-blue);
+            color: white;
+            border-color: var(--accent-blue);
+        }
+
+        .download-btn.primary:hover {
+            background: #3d8bff;
+            border-color: #3d8bff;
+        }
+
+        .download-btn.secondary {
+            background: var(--accent-mint);
+            color: white;
+            border-color: var(--accent-mint);
+        }
+
+        .download-btn.secondary:hover {
+            background: #5cb868;
+            border-color: #5cb868;
+        }
+
+        .quick-templates {
+            margin-top: 24px;
+        }
+
+        .templates-title {
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .templates-grid {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .template-btn {
+            padding: 8px 16px;
+            font-size: 0.8125rem;
+        }
+
+        @media (max-width: 640px) {
+            .options-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .download-buttons {
+                flex-direction: column;
+            }
+
+            .download-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <a href="index.html" class="back-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        All Tools
+    </a>
+
+    <header>
+        <h1>QR Code Generator</h1>
+        <p class="subtitle">Generate QR codes with custom styling</p>
+    </header>
+
+    <div class="generator-section">
+        <div class="input-card">
+            <label for="textInput" class="input-label">Content</label>
+            <textarea id="textInput" class="text-input" placeholder="Enter text, URL, or any data to encode..." aria-label="QR code content"></textarea>
+
+            <div class="options-grid">
+                <div class="option-group">
+                    <label for="sizeSelect">Size</label>
+                    <select id="sizeSelect">
+                        <option value="128">128 x 128</option>
+                        <option value="256" selected>256 x 256</option>
+                        <option value="512">512 x 512</option>
+                        <option value="1024">1024 x 1024</option>
+                    </select>
+                </div>
+
+                <div class="option-group">
+                    <label for="errorSelect">Error Correction</label>
+                    <select id="errorSelect">
+                        <option value="L">Low (7%)</option>
+                        <option value="M" selected>Medium (15%)</option>
+                        <option value="Q">Quartile (25%)</option>
+                        <option value="H">High (30%)</option>
+                    </select>
+                </div>
+
+                <div class="option-group">
+                    <label for="dotsColor">Dots Color</label>
+                    <input type="color" id="dotsColor" value="#000000">
+                </div>
+
+                <div class="option-group">
+                    <label for="bgColor">Background Color</label>
+                    <input type="color" id="bgColor" value="#ffffff">
+                </div>
+
+                <div class="option-group">
+                    <label for="dotsStyle">Dots Style</label>
+                    <select id="dotsStyle">
+                        <option value="square" selected>Square</option>
+                        <option value="dots">Dots</option>
+                        <option value="rounded">Rounded</option>
+                        <option value="extra-rounded">Extra Rounded</option>
+                        <option value="classy">Classy</option>
+                        <option value="classy-rounded">Classy Rounded</option>
+                    </select>
+                </div>
+
+                <div class="option-group">
+                    <label for="cornersStyle">Corners Style</label>
+                    <select id="cornersStyle">
+                        <option value="square" selected>Square</option>
+                        <option value="dot">Dot</option>
+                        <option value="extra-rounded">Extra Rounded</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="qr-output">
+            <div id="qrcode">
+                <span class="placeholder-text">Enter content above to generate QR code</span>
+            </div>
+
+            <div class="download-buttons">
+                <button class="download-btn primary" id="downloadPng" disabled>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Download PNG
+                </button>
+                <button class="download-btn secondary" id="downloadSvg" disabled>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Download SVG
+                </button>
+            </div>
+        </div>
+
+        <div class="quick-templates">
+            <div class="templates-title">Quick Templates</div>
+            <div class="templates-grid">
+                <button class="template-btn" data-template="url">URL</button>
+                <button class="template-btn" data-template="email">Email</button>
+                <button class="template-btn" data-template="phone">Phone</button>
+                <button class="template-btn" data-template="sms">SMS</button>
+                <button class="template-btn" data-template="wifi">WiFi</button>
+                <button class="template-btn" data-template="vcard">vCard</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.6.0-rc.1/lib/qr-code-styling.js"></script>
+    <script>
+        const textInput = document.getElementById('textInput');
+        const qrcodeContainer = document.getElementById('qrcode');
+        const sizeSelect = document.getElementById('sizeSelect');
+        const errorSelect = document.getElementById('errorSelect');
+        const dotsColor = document.getElementById('dotsColor');
+        const bgColor = document.getElementById('bgColor');
+        const dotsStyle = document.getElementById('dotsStyle');
+        const cornersStyle = document.getElementById('cornersStyle');
+        const downloadPng = document.getElementById('downloadPng');
+        const downloadSvg = document.getElementById('downloadSvg');
+
+        let qrCode = null;
+        let debounceTimer = null;
+
+        function getOptions() {
+            return {
+                width: parseInt(sizeSelect.value),
+                height: parseInt(sizeSelect.value),
+                type: 'svg',
+                data: textInput.value || ' ',
+                dotsOptions: {
+                    color: dotsColor.value,
+                    type: dotsStyle.value
+                },
+                backgroundOptions: {
+                    color: bgColor.value
+                },
+                cornersSquareOptions: {
+                    type: cornersStyle.value
+                },
+                cornersDotOptions: {
+                    type: cornersStyle.value === 'dot' ? 'dot' : undefined
+                },
+                qrOptions: {
+                    errorCorrectionLevel: errorSelect.value
+                }
+            };
+        }
+
+        function generateQR() {
+            const text = textInput.value.trim();
+
+            if (!text) {
+                qrcodeContainer.textContent = '';
+                const placeholder = document.createElement('span');
+                placeholder.className = 'placeholder-text';
+                placeholder.textContent = 'Enter content above to generate QR code';
+                qrcodeContainer.appendChild(placeholder);
+                downloadPng.disabled = true;
+                downloadSvg.disabled = true;
+                return;
+            }
+
+            qrcodeContainer.textContent = '';
+
+            const options = getOptions();
+            options.data = text;
+
+            qrCode = new QRCodeStyling(options);
+            qrCode.append(qrcodeContainer);
+
+            downloadPng.disabled = false;
+            downloadSvg.disabled = false;
+
+            // Update URL
+            const url = new URL(window.location.href);
+            url.searchParams.set('data', text);
+            history.replaceState(null, '', url.toString());
+        }
+
+        function debounceGenerate() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(generateQR, 300);
+        }
+
+        // Event listeners
+        textInput.addEventListener('input', debounceGenerate);
+        sizeSelect.addEventListener('change', generateQR);
+        errorSelect.addEventListener('change', generateQR);
+        dotsColor.addEventListener('input', generateQR);
+        bgColor.addEventListener('input', generateQR);
+        dotsStyle.addEventListener('change', generateQR);
+        cornersStyle.addEventListener('change', generateQR);
+
+        // Download buttons
+        downloadPng.addEventListener('click', () => {
+            if (qrCode) {
+                qrCode.download({ name: 'qrcode', extension: 'png' });
+            }
+        });
+
+        downloadSvg.addEventListener('click', () => {
+            if (qrCode) {
+                qrCode.download({ name: 'qrcode', extension: 'svg' });
+            }
+        });
+
+        // Template buttons
+        const templates = {
+            url: 'https://example.com',
+            email: 'mailto:example@email.com?subject=Hello&body=Hi there!',
+            phone: 'tel:+1234567890',
+            sms: 'sms:+1234567890?body=Hello!',
+            wifi: 'WIFI:T:WPA;S:NetworkName;P:Password123;;',
+            vcard: `BEGIN:VCARD
+VERSION:3.0
+FN:John Doe
+ORG:Company Name
+TEL:+1234567890
+EMAIL:john@example.com
+END:VCARD`
+        };
+
+        document.querySelectorAll('.template-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const template = btn.dataset.template;
+                if (templates[template]) {
+                    textInput.value = templates[template];
+                    generateQR();
+                }
+            });
+        });
+
+        // Load from URL
+        const params = new URLSearchParams(window.location.search);
+        const initialData = params.get('data');
+        if (initialData) {
+            textInput.value = initialData;
+            generateQR();
+        }
+    </script>
+</body>
+</html>
